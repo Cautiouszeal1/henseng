@@ -9,3 +9,10 @@ coverage
 packages/db/src/generated
 .vercel
 .turbo
+# Expo app
+apps/app/dist
+apps/app/.expo
+apps/app/ios
+apps/app/android
+apps/app/expo-env.d.ts
+apps/app/extension-build

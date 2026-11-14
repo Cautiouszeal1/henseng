@@ -1,8 +1,14 @@
 # HENSENG
 
-**Swap. Bridge. Explore. Earn.** A non-custodial cross-chain swap and bridge aggregator, testnet ecosystem, airdrop discovery and Web3 rewards platform.
+**Your Web3 super app.** Private chat, communities, a non-custodial multi-chain wallet, swap and bridge, and a dApp browser, for iOS, Android, web and Chrome.
 
-> Status: **Phase 1 (foundation)**. Swapping and bridging are not live. Every unfinished feature is clearly labelled in the UI.
+> **Super app status: Phase 1 (foundation).** It has a real wallet (create, import, encrypted vault, lock/unlock), live balances, a dApp explorer, a profile and themes. Chats and communities are labelled previews until Phase 2. See `docs/super-app-phase-1.md`.
+>
+> Run the app with `pnpm app` (Expo). The backend below (`apps/web`) will become the super app's API.
+
+## Backend: swap and bridge aggregator (`apps/web`)
+
+Status: **Phase 1 (foundation)**. Swapping and bridging are not live. Every unfinished feature is clearly labelled in the UI.
 
 ## What is in this repository
 

@@ -36,3 +36,5 @@ jobs:
       - run: pnpm lint
       - run: pnpm test
       - run: pnpm build
+      - name: Super app web export
+        run: pnpm app:build:web
