@@ -1,0 +1,43 @@
+{
+  "name": "@henseng/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@henseng/core": "workspace:*",
+    "@henseng/db": "workspace:*",
+    "@rainbow-me/rainbowkit": "2.2.11",
+    "@tanstack/react-query": "5.107.1",
+    "clsx": "2.1.1",
+    "framer-motion": "14.14.0",
+    "geist": "1.9.2",
+    "iron-session": "8.0.4",
+    "lucide-react": "1.73.0",
+    "next": "16.4.6",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "server-only": "0.0.1",
+    "viem": "2.57.19",
+    "wagmi": "2.19.5",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.5",
+    "@types/node": "22.20.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.4.6",
+    "tailwindcss": "4.3.5",
+    "typescript": "5.9.3",
+    "vitest": "4.1.12"
+  }
+}

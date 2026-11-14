@@ -1,0 +1,301 @@
+// HENSENG database schema — Phase 1 (foundation).
+// Later phases add trading, rewards, campaigns and analytics tables; see
+// docs/architecture.md for the full entity plan.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Environment {
+  TESTNET
+  MAINNET
+}
+
+enum WalletNamespace {
+  EVM
+  SOLANA
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  OPERATIONS_ADMIN
+  CAMPAIGN_MANAGER
+  ANALYST
+  READ_ONLY_ADMIN
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING_REVIEW
+  VERIFIED
+  REJECTED
+}
+
+enum HealthStatus {
+  UNKNOWN
+  HEALTHY
+  DEGRADED
+  DOWN
+}
+
+enum ProviderKind {
+  SWAP
+  BRIDGE
+}
+
+enum FeeProduct {
+  SWAP
+  BRIDGE
+}
+
+// ───────────────────────── Identity ─────────────────────────
+
+model User {
+  id        String    @id @default(cuid())
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  wallets   Wallet[]
+  sessions  Session[]
+  admin     AdminUser?
+  orgMemberships OrganizationMember[]
+
+  @@map("users")
+}
+
+model Wallet {
+  id          String          @id @default(cuid())
+  userId      String
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  namespace   WalletNamespace @default(EVM)
+  /// Stored lower-case for EVM so uniqueness is case-insensitive
+  address     String
+  firstSeenAt DateTime        @default(now())
+  lastSignInAt DateTime?
+
+  @@unique([namespace, address])
+  @@index([userId])
+  @@map("wallets")
+}
+
+/// Single-use SIWE nonces. Consumed on verification to prevent replay.
+model AuthNonce {
+  nonce      String    @id
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime
+  consumedAt DateTime?
+
+  @@index([expiresAt])
+  @@map("auth_nonces")
+}
+
+/// Server-side session record so sessions can be revoked.
+model Session {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  walletId  String
+  chainId   Int
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+  userAgent String?
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model AdminUser {
+  id        String          @id @default(cuid())
+  userId    String          @unique
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roles     AdminUserRole[]
+  createdAt DateTime        @default(now())
+  disabledAt DateTime?
+  auditLogs AdminAuditLog[]
+
+  @@map("admin_users")
+}
+
+model AdminUserRole {
+  adminUserId String
+  adminUser   AdminUser @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+  role        AdminRole
+  grantedAt   DateTime  @default(now())
+  grantedById String?
+
+  @@id([adminUserId, role])
+  @@map("admin_user_roles")
+}
+
+/// Partner projects. Kept separate from users and admins (spec §12).
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  website   String?
+  verificationStatus VerificationStatus @default(UNVERIFIED)
+  createdAt DateTime @default(now())
+  members   OrganizationMember[]
+
+  @@map("organizations")
+}
+
+model OrganizationMember {
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           String       @default("member")
+  createdAt      DateTime     @default(now())
+
+  @@id([organizationId, userId])
+  @@map("organization_members")
+}
+
+// ───────────────────────── Registry ─────────────────────────
+
+model Chain {
+  /// EVM chain ID
+  id             Int          @id
+  name           String
+  environment    Environment
+  nativeSymbol   String
+  nativeDecimals Int          @default(18)
+  explorerUrl    String
+  logoUrl        String?
+  /// Admin switch. A chain is only *supported* when enabled AND at least one
+  /// enabled, healthy provider row exists in chain_provider_support.
+  enabled        Boolean      @default(false)
+  healthStatus   HealthStatus @default(UNKNOWN)
+  lastHealthCheckAt DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  tokens         Token[]
+  providers      ChainProviderSupport[]
+  feeConfigurations FeeConfiguration[]
+
+  @@index([environment, enabled])
+  @@map("chains")
+}
+
+model Token {
+  id                 String             @id @default(cuid())
+  chainId            Int
+  chain              Chain              @relation(fields: [chainId], references: [id])
+  /// lower-case; 0x000…000 for the native asset
+  address            String
+  symbol             String
+  name               String
+  decimals           Int
+  logoUrl            String?
+  verificationStatus VerificationStatus @default(UNVERIFIED)
+  /// e.g. ["UNVERIFIED","SYMBOL_IMPERSONATION","LOW_LIQUIDITY"]
+  riskFlags          String[]           @default([])
+  priceSource        String?
+  /// Set by route discovery in Phase 2+; null = never checked
+  routeAvailable     Boolean?
+  lastRouteCheckAt   DateTime?
+  enabled            Boolean            @default(false)
+  source             String             @default("admin")
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@unique([chainId, address])
+  @@index([chainId, enabled])
+  @@index([symbol])
+  @@map("tokens")
+}
+
+model Provider {
+  /// slug, e.g. "0x", "uniswap", "lifi"
+  id           String       @id
+  name         String
+  kind         ProviderKind
+  website      String?
+  docsUrl      String?
+  /// Global kill switch for the provider
+  enabled      Boolean      @default(false)
+  healthStatus HealthStatus @default(UNKNOWN)
+  notes        String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  chains       ChainProviderSupport[]
+
+  @@map("providers")
+}
+
+model ChainProviderSupport {
+  chainId           Int
+  chain             Chain        @relation(fields: [chainId], references: [id])
+  providerId        String
+  provider          Provider     @relation(fields: [providerId], references: [id])
+  enabled           Boolean      @default(false)
+  healthStatus      HealthStatus @default(UNKNOWN)
+  lastHealthCheckAt DateTime?
+  /// Only set after an integration test against this chain has passed
+  verifiedAt        DateTime?
+
+  @@id([chainId, providerId])
+  @@map("chain_provider_support")
+}
+
+// ───────────────────────── Fees ─────────────────────────
+
+/// Versioned and append-only: a change creates a new row with a higher
+/// version; old rows are closed with activeTo, never edited.
+model FeeConfiguration {
+  id            String      @id @default(cuid())
+  version       Int
+  product       FeeProduct
+  environment   Environment
+  chainId       Int?
+  chain         Chain?      @relation(fields: [chainId], references: [id])
+  tokenAddress  String?
+  providerId    String?
+  /// centi-bps: 30 bps = 3000
+  rateCentiBps  Int
+  minFee        Decimal?    @db.Decimal(78, 0)
+  maxFee        Decimal?    @db.Decimal(78, 0)
+  enabled       Boolean     @default(true)
+  activeFrom    DateTime    @default(now())
+  activeTo      DateTime?
+  createdById   String?
+  createdAt     DateTime    @default(now())
+
+  @@index([product, environment, enabled])
+  @@map("fee_configurations")
+}
+
+// ───────────────────────── Operations ─────────────────────────
+
+/// Append-only. Never updated or deleted by the application.
+model AdminAuditLog {
+  id          String     @id @default(cuid())
+  actorId     String?
+  actor       AdminUser? @relation(fields: [actorId], references: [id])
+  action      String
+  entityType  String
+  entityId    String
+  before      Json?
+  after       Json?
+  ip          String?
+  createdAt   DateTime   @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("admin_audit_logs")
+}
+
+model SystemSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+  updatedById String?
+
+  @@map("system_settings")
+}

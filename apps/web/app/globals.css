@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+/*
+ * HENSENG design tokens.
+ * Colour carries meaning: blue = mainnet / primary action, violet = testnet,
+ * cyan = live and healthy. Nothing is coloured for decoration alone.
+ */
+@theme {
+  --color-abyss: #070b1a;      /* page base */
+  --color-deep: #0e1530;       /* raised surfaces */
+  --color-deeper: #121b3c;     /* inputs, hovered rows */
+  --color-rule: #1e2a4d;       /* borders, dividers */
+  --color-rule-strong: #2c3b68;
+  --color-ink: #eef2fa;        /* primary text */
+  --color-ink-muted: #8d99b8;  /* secondary text */
+  --color-ink-faint: #5d6a8c;  /* tertiary text, disabled */
+  --color-volt: #2f6bff;       /* primary / mainnet */
+  --color-volt-hover: #4a80ff;
+  --color-violet: #8b6cff;     /* testnet */
+  --color-signal: #3fd0e0;     /* live / healthy */
+  --color-warn: #f2b84b;
+  --color-danger: #ff5d6c;
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-control: 6px;
+  --radius-panel: 14px;
+
+  /* Type scale (ratio ~1.25, display steps larger) */
+  --text-display: clamp(3rem, 7.5vw, 6.5rem);
+  --text-display--line-height: 0.92;
+  --text-display--letter-spacing: -0.045em;
+}
+
+@layer base {
+  html {
+    background: var(--color-abyss);
+    color: var(--color-ink);
+    color-scheme: dark;
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "ss01", "cv11";
+  }
+  body {
+    min-height: 100dvh;
+    font-family: var(--font-sans);
+    line-height: 1.55;
+  }
+  ::selection {
+    background: color-mix(in srgb, var(--color-volt) 45%, transparent);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-signal);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
