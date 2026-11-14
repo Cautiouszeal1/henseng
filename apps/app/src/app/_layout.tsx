@@ -10,6 +10,7 @@ import { View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ApiProvider } from "../api/api-context";
+import { MessagingProvider } from "../messaging/messaging-context";
 import { ProfileProvider } from "../profile/profile-context";
 import { ToastProvider } from "../ui/overlays";
 import { ThemeProvider, useTheme } from "../ui/theme";
@@ -74,7 +75,9 @@ export default function RootLayout() {
             <WalletProvider>
               <ProfileProvider>
                 <ApiProvider>
-                  <RootNavigator />
+                  <MessagingProvider>
+                    <RootNavigator />
+                  </MessagingProvider>
                 </ApiProvider>
               </ProfileProvider>
             </WalletProvider>

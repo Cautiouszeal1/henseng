@@ -9,6 +9,7 @@ import { Counter, Text } from "../../ui/primitives";
 import { useLayout, useTheme } from "../../ui/theme";
 import { radius } from "../../ui/tokens";
 import { PREVIEW_CHATS } from "../../data/preview";
+import { useMessaging } from "../../messaging/messaging-context";
 
 const TABS: { name: string; href: "/chats" | "/communities" | "/wallet" | "/explore" | "/profile"; label: string; icon: LucideIcon }[] = [
   { name: "chats", href: "/chats", label: "Chats", icon: MessageCircle },
@@ -18,7 +19,7 @@ const TABS: { name: string; href: "/chats" | "/communities" | "/wallet" | "/expl
   { name: "profile", href: "/profile", label: "Profile", icon: UserRound },
 ];
 
-const unreadChats = PREVIEW_CHATS.filter((c) => c.unread > 0).length;
+const previewUnread = PREVIEW_CHATS.filter((c) => c.unread > 0).length;
 
 type ButtonProps = TabTriggerSlotProps & { icon: LucideIcon; label: string; variant: "bar" | "side"; badge?: number };
 
@@ -65,6 +66,9 @@ function TabButton({ icon: Icon, label, isFocused, variant, badge, ref: _ref, ..
 export default function TabsLayout() {
   const { theme } = useTheme();
   const { isWide, isDesktop } = useLayout();
+  const messaging = useMessaging();
+  // Live builds count real encrypted chats; preview builds count the labelled sample chats.
+  const unreadChats = messaging.status === "off" ? previewUnread : messaging.unreadChats;
   const insets = useSafeAreaInsets();
   const { profile } = useProfile();
 

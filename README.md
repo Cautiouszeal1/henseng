@@ -6,6 +6,8 @@
 >
 > **Phase 2a:** live communities, synced profiles, devices and notifications on the HENSENG API (`/api/v1`). See `docs/super-app-phase-2a.md`.
 >
+> **Phase 2b:** end-to-end encrypted chats over XMTP (one-to-one, groups, message requests, replies, reactions, read receipts). Turn it on with `EXPO_PUBLIC_XMTP_ENV=dev`. Phones need a development build (`eas build --profile development`), not Expo Go. See `docs/super-app-phase-2b.md`.
+>
 > Run the app with `pnpm app` (Expo). Set `EXPO_PUBLIC_API_URL` in `apps/app/.env.local` to connect it to the API in `apps/web`.
 
 ## Backend: swap and bridge aggregator (`apps/web`)

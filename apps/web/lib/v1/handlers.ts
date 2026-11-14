@@ -141,6 +141,21 @@ export const getProfile: Handler = async (_req, p) => {
   return json({ ...personView(profile.user), bio: profile.bio });
 };
 
+const lookupBody = z.object({ addresses: z.array(z.string().regex(/^0x[0-9a-fA-F]{40}$/)).min(1).max(100) });
+
+/** Resolves wallet addresses to public HENSENG profiles (used to show names in encrypted chats). */
+export const lookupProfiles: Handler = async (req) => {
+  const lim = await limited(`v1lookup:${ip(req)}`, 120, 60_000);
+  if (lim) return lim;
+  const body = await parseBody(req, lookupBody);
+  if ("response" in body) return body.response;
+  const wallets = await db().wallet.findMany({
+    where: { namespace: "EVM", address: { in: body.data.addresses.map((a) => a.toLowerCase()) } },
+    include: { user: { include: personInclude } },
+  });
+  return json({ profiles: Object.fromEntries(wallets.map((w) => [w.address, personView(w.user)])) });
+};
+
 export const listDevices: Handler = (req) =>
   authed(req, async (u) => {
     const rows = await db().appToken.findMany({ where: { userId: u.userId, revokedAt: null, expiresAt: { gt: new Date() } }, orderBy: { lastUsedAt: "desc" } });
@@ -404,7 +419,7 @@ export const readNotifications: Handler = (req) =>
     return json({ ok: true });
   });
 
-const reportBody = z.object({ targetType: z.enum(["message", "community", "user"]), targetId: z.string().min(1).max(40), reason: z.string().trim().min(3).max(500) });
+const reportBody = z.object({ targetType: z.enum(["message", "community", "user", "chat"]), targetId: z.string().min(1).max(100), reason: z.string().trim().min(3).max(500) });
 
 export const createReport: Handler = (req) =>
   authed(req, async (u) => {

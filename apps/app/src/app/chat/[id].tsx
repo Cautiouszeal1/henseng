@@ -2,11 +2,15 @@ import { useLocalSearchParams } from "expo-router";
 import { MessageCircleOff } from "lucide-react-native";
 import { PREVIEW_CHATS } from "../../data/preview";
 import { ChatThread } from "../../features/chat-thread";
+import { ChatThreadLive } from "../../features/chat-thread-live";
+import { useMessaging } from "../../messaging/messaging-context";
 import { EmptyState } from "../../ui/primitives";
 import { Screen } from "../../ui/screen";
 
 export default function ChatRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { status } = useMessaging();
+  if (status !== "off") return <ChatThreadLive chatId={id} />;
   const chat = PREVIEW_CHATS.find((c) => c.id === id);
   if (!chat) {
     return (
