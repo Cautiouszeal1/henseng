@@ -1,13 +1,11 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { createPublicClient, http } from "viem";
-import { mainnet } from "viem/chains";
-import { normalize } from "viem/ens";
 import { API_URL, useApi } from "../api/api-context";
 import type { Person } from "../api/types";
+import { useResolveRecipient } from "../wallet/resolve-recipient";
 import { useWallet } from "../wallet/wallet-context";
 import { getDbKey } from "./key-storage";
-import { parseTarget, type ChatMessage, type MessagingClient } from "./model";
+import { type ChatMessage, type MessagingClient } from "./model";
 import { createMemoryClient } from "./memory-client";
 import { connectXmtp } from "./xmtp";
 
@@ -149,31 +147,17 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
     [profiles, lookup],
   );
 
+  const resolveRecipient = useResolveRecipient();
   const resolveTarget = useCallback<MessagingApi["resolveTarget"]>(
     async (input) => {
-      const t = parseTarget(input);
-      if (t.type === "invalid") return { error: t.reason };
-      if (t.type === "address") return { address: t.value, label: t.value };
-      if (t.type === "ens") {
-        try {
-          const ens = createPublicClient({ chain: mainnet, transport: http(undefined, { timeout: 10_000 }) });
-          const a = await ens.getEnsAddress({ name: normalize(t.value) });
-          return a ? { address: a.toLowerCase() as `0x${string}`, label: t.value } : { error: `${t.value} doesn't point to an address.` };
-        } catch {
-          return { error: "Couldn't look up that ENS name. Check your connection." };
-        }
+      const r = await resolveRecipient(input);
+      if ("person" in r && r.person) {
+        const person = r.person;
+        setProfiles((prev) => ({ ...prev, [r.address]: person }));
       }
-      if (api.status !== "ready") return { error: "Usernames need the HENSENG server. Use a wallet address instead." };
-      try {
-        const p = await api.request<Person>("GET", `/profiles/${t.value}`);
-        if (!p.address) return { error: `@${t.value} has no wallet linked.` };
-        setProfiles((prev) => ({ ...prev, [p.address!.toLowerCase()]: p }));
-        return { address: p.address.toLowerCase() as `0x${string}`, label: `@${t.value}` };
-      } catch {
-        return { error: `No one on HENSENG is called @${t.value}.` };
-      }
+      return "error" in r ? r : { address: r.address, label: r.label };
     },
-    [api],
+    [resolveRecipient],
   );
 
   const markRead = useCallback((chatId: string) => {

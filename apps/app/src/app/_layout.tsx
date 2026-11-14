@@ -11,6 +11,8 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ApiProvider } from "../api/api-context";
 import { MessagingProvider } from "../messaging/messaging-context";
+import { ActivityProvider } from "../wallet/activity";
+import { PortfolioProvider } from "../wallet/use-portfolio";
 import { ProfileProvider } from "../profile/profile-context";
 import { ToastProvider } from "../ui/overlays";
 import { ThemeProvider, useTheme } from "../ui/theme";
@@ -50,6 +52,8 @@ function RootNavigator() {
           <Stack.Screen name="community/[id]" options={{ animation: "slide_from_right" }} />
           <Stack.Screen name="edit-profile" options={{ presentation: "modal" }} />
           <Stack.Screen name="notifications" options={{ animation: "slide_from_right" }} />
+          <Stack.Screen name="send" options={{ presentation: "modal" }} />
+          <Stack.Screen name="scan" options={{ presentation: "fullScreenModal" }} />
         </Stack.Protected>
       </Stack>
     </>
@@ -75,9 +79,13 @@ export default function RootLayout() {
             <WalletProvider>
               <ProfileProvider>
                 <ApiProvider>
-                  <MessagingProvider>
-                    <RootNavigator />
-                  </MessagingProvider>
+                  <PortfolioProvider>
+                    <ActivityProvider>
+                      <MessagingProvider>
+                        <RootNavigator />
+                      </MessagingProvider>
+                    </ActivityProvider>
+                  </PortfolioProvider>
                 </ApiProvider>
               </ProfileProvider>
             </WalletProvider>

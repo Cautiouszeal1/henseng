@@ -37,7 +37,15 @@
         }
       ],
       "expo-secure-store",
-      "expo-dev-client"
+      "expo-dev-client",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "HENSENG uses the camera to scan wallet addresses and payment QR codes.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

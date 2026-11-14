@@ -8,6 +8,8 @@ import {
 } from "@henseng/wallet";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AppState } from "react-native";
+import { createWalletClient, http } from "viem";
+import { networkFor, rpcUrl } from "./networks";
 import { deleteVault, loadVault, saveVault } from "./vault-storage";
 
 /**
@@ -40,6 +42,10 @@ interface WalletApi {
   removeWallet: () => Promise<void>;
   /** Signs a plain-text message (EIP-191) with the unlocked account. Used for HENSENG sign-in. */
   signMessage: (message: string) => Promise<`0x${string}`>;
+  /** Checks the password against the encrypted vault. Used to confirm a send. */
+  verifyPassword: (password: string) => Promise<boolean>;
+  /** Signs and broadcasts a transaction on this device. Resolves with the hash once the network accepts it. */
+  sendTransaction: (tx: { chainId: number; to: `0x${string}`; value?: bigint; data?: `0x${string}`; gas?: bigint }) => Promise<`0x${string}`>;
   touch: () => void;
 }
 
@@ -124,9 +130,30 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     return deriveEvmAccount(phrase.current).signMessage({ message });
   }, []);
 
+  const verifyPassword = useCallback(async (password: string) => {
+    const vault = await loadVault();
+    if (!vault) return false;
+    try {
+      await decryptVault(vault, password);
+      return true;
+    } catch (e) {
+      if (e instanceof WrongPasswordError) return false;
+      throw e;
+    }
+  }, []);
+
+  const sendTransaction = useCallback<WalletApi["sendTransaction"]>(async ({ chainId, to, value, data, gas }) => {
+    if (!phrase.current) throw new Error("Unlock HENSENG first.");
+    const network = networkFor(chainId);
+    if (!network) throw new Error("Unsupported network.");
+    lastActive.current = Date.now();
+    const client = createWalletClient({ account: deriveEvmAccount(phrase.current), chain: network.chain, transport: http(rpcUrl(chainId), { timeout: 20_000 }) });
+    return client.sendTransaction({ to, value, data, gas });
+  }, []);
+
   const value = useMemo<WalletApi>(
-    () => ({ status, address, createWallet, unlock, lock, revealPhrase, removeWallet, signMessage, touch: () => (lastActive.current = Date.now()) }),
-    [status, address, createWallet, unlock, lock, revealPhrase, removeWallet, signMessage],
+    () => ({ status, address, createWallet, unlock, lock, revealPhrase, removeWallet, signMessage, verifyPassword, sendTransaction, touch: () => (lastActive.current = Date.now()) }),
+    [status, address, createWallet, unlock, lock, revealPhrase, removeWallet, signMessage, verifyPassword, sendTransaction],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

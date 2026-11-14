@@ -11,6 +11,7 @@
     "@xmtp/browser-sdk": "7.1.0",
     "@xmtp/react-native-sdk": "5.7.0",
     "expo": "~58.0.25",
+    "expo-camera": "~58.0.14",
     "expo-clipboard": "~58.0.4",
     "expo-constants": "~58.0.16",
     "expo-crypto": "~58.0.8",

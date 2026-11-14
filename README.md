@@ -8,6 +8,8 @@
 >
 > **Phase 2b:** end-to-end encrypted chats over XMTP (one-to-one, groups, message requests, replies, reactions, read receipts). Turn it on with `EXPO_PUBLIC_XMTP_ENV=dev`. Phones need a development build (`eas build --profile development`), not Expo Go. See `docs/super-app-phase-2b.md`.
 >
+> **Phase 3a:** the wallet sends ETH and tokens (USDC, USDT, DAI, WETH, ARB) on Ethereum, Base and Arbitrum, with recipient checks, a fee preview, password confirmation and live status. It also scans payment QR codes and shows USD prices. See `docs/super-app-phase-3a.md`.
+>
 > Run the app with `pnpm app` (Expo). Set `EXPO_PUBLIC_API_URL` in `apps/app/.env.local` to connect it to the API in `apps/web`.
 
 ## Backend: swap and bridge aggregator (`apps/web`)
@@ -56,6 +58,7 @@ On Windows PowerShell, use `Copy-Item .env apps/web/.env.local` and so on in pla
 | `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` | recommended | From dashboard.walletconnect.com (free). Without it, only browser wallets and Coinbase Wallet appear. |
 | `ADMIN_BOOTSTRAP_ADDRESSES` | first run | Comma-separated wallets that become Super Admin on first sign-in |
 | `RPC_URL_<chainId>` | optional | Server-side RPC (Alchemy/QuickNode). Public RPCs are used if empty. |
+| `COINGECKO_API_KEY` | optional | Free CoinGecko demo key for wallet USD prices. Works without one, at lower rate limits. |
 
 ### Becoming the first admin
 

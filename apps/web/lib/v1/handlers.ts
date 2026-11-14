@@ -21,6 +21,7 @@ import { checkSiweFields, NONCE_TTL_MS, verifySiweSignature } from "@/lib/siwe";
 import { APP_TOKEN_TTL_DAYS, newToken, requireAppUser, optionalAppUser, type AppUser } from "./auth";
 import { error, ip, json, parseBody } from "./http";
 import { personInclude, personView } from "./views";
+import { ALLOWED_PRICE_IDS, getPrices } from "./prices";
 
 type Params = Record<string, string>;
 export type Handler = (req: NextRequest, params: Params) => Promise<Response>;
@@ -430,3 +431,14 @@ export const createReport: Handler = (req) =>
     await db().report.create({ data: { reporterId: u.userId, ...body.data } });
     return json({ ok: true }, 201);
   });
+
+/** USD prices for tokens in the wallet's curated list. Public; no account needed. */
+export const listPrices: Handler = async (req) => {
+  const lim = await limited(`v1prices:${ip(req)}`, 60, 60_000);
+  if (lim) return lim;
+  const ids = [...new Set((req.nextUrl.searchParams.get("ids") ?? "").split(",").map((s) => s.trim()).filter(Boolean))];
+  if (!ids.length || ids.length > 50) return error(400, "BAD_REQUEST", "Pass 1 to 50 comma-separated price ids.");
+  const unknown = ids.filter((id) => !ALLOWED_PRICE_IDS.has(id));
+  if (unknown.length) return error(400, "BAD_REQUEST", `Unknown price id: ${unknown.join(", ")}`);
+  return json({ ...(await getPrices(ids)), currency: "usd", source: "CoinGecko" });
+};

@@ -90,6 +90,9 @@ const look = await call("POST", "/profiles/lookup", null, { addresses: [Bw.addre
 check("profile lookup by address (public, misses omitted)", look.status === 200 && look.data.profiles[Bw.address.toLowerCase()]?.username === "amara" && Object.keys(look.data.profiles).length === 1);
 check("profile lookup rejects bad addresses", (await call("POST", "/profiles/lookup", null, { addresses: ["nope"] })).status === 400);
 check("report an encrypted chat (no contents)", (await call("POST", "/reports", tc, { targetType: "chat", targetId: Bw.address.toLowerCase(), reason: "Scam DMs" })).status === 201);
+const pr = await call("GET", "/prices?ids=ethereum,usd-coin");
+check("prices: known ids answered (priced or reported missing, never invented)", pr.status === 200 && ["ethereum", "usd-coin"].every((id) => (pr.data.prices[id] && typeof pr.data.prices[id].usd === "number") || pr.data.missing.includes(id)));
+check("prices: unknown id refused", (await call("GET", "/prices?ids=dogecoin")).status === 400);
 check("logout revokes token", (await call("POST", "/auth/logout", tc)).status === 200 && (await call("GET", "/me", tc)).status === 401);
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail) process.exit(1);

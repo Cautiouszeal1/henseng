@@ -30,6 +30,7 @@ const ROUTES: [Method, string, h.Handler][] = [
   ["GET", "notifications", h.listNotifications],
   ["POST", "notifications/read", h.readNotifications],
   ["POST", "reports", h.createReport],
+  ["GET", "prices", h.listPrices],
 ];
 
 export function match(method: Method, segments: string[]): { handler: h.Handler; params: Record<string, string> } | null {

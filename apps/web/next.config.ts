@@ -11,7 +11,7 @@ const securityHeaders = [
 const config: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  transpilePackages: ["@henseng/core", "@henseng/db"],
+  transpilePackages: ["@henseng/core", "@henseng/db", "@henseng/wallet"],
   serverExternalPackages: ["pg", "@prisma/adapter-pg"],
   turbopack: {
     resolveAlias: Object.fromEntries(
