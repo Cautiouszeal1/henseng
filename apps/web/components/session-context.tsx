@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { createSiweMessage } from "viem/siwe";
-import { useAccount, useDisconnect, useSignMessage } from "wagmi";
+import { useAccount, useAccountEffect, useDisconnect, useSignMessage } from "wagmi";
 
 type SessionState =
   | { status: "loading" }
@@ -62,13 +62,22 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setSession({ status: "signed-out" });
   }, []);
 
-  // If the wallet is disconnected or switched to another account, end the session.
-  const mismatched =
-    session.status === "signed-in" && (!isConnected || (address !== undefined && address.toLowerCase() !== session.address));
+  // End the session when the user actually disconnects their wallet. This
+  // listens for the disconnect event rather than reading `isConnected`, which
+  // is briefly false on every page load while the wallet reconnects.
+  useAccountEffect({
+    onDisconnect() {
+      endSession().then(() => setSession({ status: "signed-out" }));
+    },
+  });
+
+  // End the session if the wallet switches to a different account.
+  const switchedAccount =
+    session.status === "signed-in" && isConnected && address !== undefined && address.toLowerCase() !== session.address;
   useEffect(() => {
-    if (!mismatched) return;
+    if (!switchedAccount) return;
     endSession().then(() => setSession({ status: "signed-out" }));
-  }, [mismatched]);
+  }, [switchedAccount]);
 
   const signIn = useCallback(async () => {
     if (!address || !chainId) return;
