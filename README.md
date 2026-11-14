@@ -4,7 +4,9 @@
 
 > **Super app status: Phase 1 (foundation).** It has a real wallet (create, import, encrypted vault, lock/unlock), live balances, a dApp explorer, a profile and themes. Chats and communities are labelled previews until Phase 2. See `docs/super-app-phase-1.md`.
 >
-> Run the app with `pnpm app` (Expo). The backend below (`apps/web`) will become the super app's API.
+> **Phase 2a:** live communities, synced profiles, devices and notifications on the HENSENG API (`/api/v1`). See `docs/super-app-phase-2a.md`.
+>
+> Run the app with `pnpm app` (Expo). Set `EXPO_PUBLIC_API_URL` in `apps/app/.env.local` to connect it to the API in `apps/web`.
 
 ## Backend: swap and bridge aggregator (`apps/web`)
 

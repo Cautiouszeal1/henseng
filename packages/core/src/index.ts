@@ -3,3 +3,4 @@ export * from "./fees";
 export * from "./registry";
 export * from "./rbac";
 export * from "./metrics";
+export * from "./community";

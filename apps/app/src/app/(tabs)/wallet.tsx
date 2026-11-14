@@ -2,6 +2,7 @@ import { formatTokenAmount, shortAddress } from "@henseng/wallet";
 import * as Clipboard from "expo-clipboard";
 import { LinearGradient } from "expo-linear-gradient";
 import * as WebBrowser from "expo-web-browser";
+import { router } from "expo-router";
 import {
   ArrowDownToLine,
   ArrowLeftRight,
@@ -176,7 +177,7 @@ export default function WalletScreen() {
       right={
         <>
           <IconButton icon={ScanLine} label="Scan QR code" onPress={() => toast("QR scanning arrives with Send in Phase 3.")} />
-          <IconButton icon={Bell} label="Wallet notifications" onPress={() => toast("Transaction alerts arrive in Phase 3.")} />
+          <IconButton icon={Bell} label="Notifications" onPress={() => router.push("/notifications")} />
           <IconButton icon={Lock} label="Lock wallet" onPress={lock} />
         </>
       }

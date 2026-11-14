@@ -63,6 +63,13 @@ model User {
   sessions  Session[]
   admin     AdminUser?
   orgMemberships OrganizationMember[]
+  profile   Profile?
+  appTokens AppToken[]
+  communitiesOwned Community[]          @relation("CommunityOwner")
+  memberships      CommunityMember[]
+  channelMessages  ChannelMessage[]     @relation("MessageAuthor")
+  notifications    Notification[]
+  reports          Report[]
 
   @@map("users")
 }
@@ -298,4 +305,187 @@ model SystemSetting {
   updatedById String?
 
   @@map("system_settings")
+}
+
+// ───────────────────────── Super app: identity ─────────────────────────
+
+/// Public profile shown in chats and communities. Usernames are unique,
+/// stored lower-case.
+model Profile {
+  userId      String   @id
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  username    String?  @unique
+  displayName String   @default("")
+  bio         String   @default("")
+  avatarIndex Int      @default(0)
+  coverIndex  Int      @default(0)
+  showOnline  Boolean  @default(true)
+  updatedAt   DateTime @updatedAt
+
+  @@map("profiles")
+}
+
+/// Bearer tokens for the mobile app, web app and extension. Only a SHA-256
+/// hash of the token is stored. Each row is one signed-in device.
+model AppToken {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  walletId   String
+  tokenHash  String    @unique
+  platform   String
+  deviceName String?
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime  @default(now())
+  expiresAt  DateTime
+  revokedAt  DateTime?
+
+  @@index([userId])
+  @@map("app_tokens")
+}
+
+// ───────────────────────── Super app: communities ─────────────────────────
+
+enum CommunityVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+enum CommunityRole {
+  OWNER
+  ADMIN
+  MODERATOR
+  MEMBER
+}
+
+enum ChannelKind {
+  TEXT
+  ANNOUNCEMENTS
+}
+
+model Community {
+  id          String              @id @default(cuid())
+  slug        String              @unique
+  name        String
+  tagline     String              @default("")
+  description String              @default("")
+  category    String              @default("General")
+  visibility  CommunityVisibility @default(PUBLIC)
+  avatarIndex Int                 @default(0)
+  ownerId     String
+  owner       User                @relation("CommunityOwner", fields: [ownerId], references: [id])
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  members     CommunityMember[]
+  channels    CommunityChannel[]
+  invites     CommunityInvite[]
+  bans        CommunityBan[]
+
+  @@index([visibility, createdAt])
+  @@map("communities")
+}
+
+model CommunityMember {
+  communityId String
+  community   Community     @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        CommunityRole @default(MEMBER)
+  joinedAt    DateTime      @default(now())
+  lastReadAt  DateTime      @default(now())
+
+  @@id([communityId, userId])
+  @@index([userId])
+  @@map("community_members")
+}
+
+model CommunityChannel {
+  id          String           @id @default(cuid())
+  communityId String
+  community   Community        @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  name        String
+  kind        ChannelKind      @default(TEXT)
+  /// Lowest role allowed to post. Announcements default to ADMIN.
+  postRole    CommunityRole    @default(MEMBER)
+  position    Int              @default(0)
+  createdAt   DateTime         @default(now())
+  messages    ChannelMessage[]
+
+  @@unique([communityId, name])
+  @@map("community_channels")
+}
+
+/// Public community channel messages. NOT end-to-end encrypted — the app
+/// says so in the interface. Private chats use XMTP instead.
+model ChannelMessage {
+  id          String           @id @default(cuid())
+  channelId   String
+  channel     CommunityChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  authorId    String
+  author      User             @relation("MessageAuthor", fields: [authorId], references: [id])
+  body        String
+  replyToId   String?
+  createdAt   DateTime         @default(now())
+  editedAt    DateTime?
+  deletedAt   DateTime?
+  deletedById String?
+
+  @@index([channelId, createdAt])
+  @@map("channel_messages")
+}
+
+model CommunityInvite {
+  code        String    @id
+  communityId String
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  createdById String
+  maxUses     Int?
+  uses        Int       @default(0)
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([communityId])
+  @@map("community_invites")
+}
+
+model CommunityBan {
+  communityId String
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  userId      String
+  bannedById  String
+  reason      String?
+  createdAt   DateTime  @default(now())
+
+  @@id([communityId, userId])
+  @@map("community_bans")
+}
+
+// ───────────────────────── Super app: notifications and safety ─────────────────────────
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      String
+  title     String
+  body      String    @default("")
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
+
+model Report {
+  id         String   @id @default(cuid())
+  reporterId String
+  reporter   User     @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  targetType String
+  targetId   String
+  reason     String
+  createdAt  DateTime @default(now())
+
+  @@index([targetType, targetId])
+  @@map("reports")
 }

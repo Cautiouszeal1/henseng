@@ -9,6 +9,7 @@ import { useEffect } from "react";
 import { View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { ApiProvider } from "../api/api-context";
 import { ProfileProvider } from "../profile/profile-context";
 import { ToastProvider } from "../ui/overlays";
 import { ThemeProvider, useTheme } from "../ui/theme";
@@ -47,6 +48,7 @@ function RootNavigator() {
           <Stack.Screen name="chat/[id]" options={{ animation: "slide_from_right" }} />
           <Stack.Screen name="community/[id]" options={{ animation: "slide_from_right" }} />
           <Stack.Screen name="edit-profile" options={{ presentation: "modal" }} />
+          <Stack.Screen name="notifications" options={{ animation: "slide_from_right" }} />
         </Stack.Protected>
       </Stack>
     </>
@@ -71,7 +73,9 @@ export default function RootLayout() {
           <ToastProvider>
             <WalletProvider>
               <ProfileProvider>
-                <RootNavigator />
+                <ApiProvider>
+                  <RootNavigator />
+                </ApiProvider>
               </ProfileProvider>
             </WalletProvider>
           </ToastProvider>

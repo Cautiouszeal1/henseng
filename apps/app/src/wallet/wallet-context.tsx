@@ -38,6 +38,8 @@ interface WalletApi {
   revealPhrase: (password: string) => Promise<string>;
   /** Removes the wallet from this device. Funds stay on-chain; the phrase restores them. */
   removeWallet: () => Promise<void>;
+  /** Signs a plain-text message (EIP-191) with the unlocked account. Used for HENSENG sign-in. */
+  signMessage: (message: string) => Promise<`0x${string}`>;
   touch: () => void;
 }
 
@@ -116,9 +118,15 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     setStatus("none");
   }, []);
 
+  const signMessage = useCallback(async (message: string) => {
+    if (!phrase.current) throw new Error("Unlock HENSENG first.");
+    lastActive.current = Date.now();
+    return deriveEvmAccount(phrase.current).signMessage({ message });
+  }, []);
+
   const value = useMemo<WalletApi>(
-    () => ({ status, address, createWallet, unlock, lock, revealPhrase, removeWallet, touch: () => (lastActive.current = Date.now()) }),
-    [status, address, createWallet, unlock, lock, revealPhrase, removeWallet],
+    () => ({ status, address, createWallet, unlock, lock, revealPhrase, removeWallet, signMessage, touch: () => (lastActive.current = Date.now()) }),
+    [status, address, createWallet, unlock, lock, revealPhrase, removeWallet, signMessage],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

@@ -3,6 +3,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Check, X } from "lucide-react-native";
 import { useState } from "react";
 import { View } from "react-native";
+import { useApi } from "../api/api-context";
 import { USERNAME_RE, useProfile } from "../profile/profile-context";
 import { Avatar } from "../ui/avatar";
 import { useToast } from "../ui/overlays";
@@ -15,6 +16,9 @@ export default function EditProfile() {
   const { theme } = useTheme();
   const { profile, update } = useProfile();
   const toast = useToast();
+  const { status, request, refreshMe } = useApi();
+  const [saving, setSaving] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState(profile.displayName);
   const [username, setUsername] = useState(profile.username);
   const [bio, setBio] = useState(profile.bio);
@@ -24,8 +28,22 @@ export default function EditProfile() {
 
   const save = async () => {
     if (usernameError) return;
-    await update({ displayName: displayName.trim(), username: username.trim(), bio: bio.trim(), coverIndex, avatarIndex });
-    toast("Profile saved", "success");
+    const next = { displayName: displayName.trim(), username: username.trim(), bio: bio.trim(), coverIndex, avatarIndex };
+    setServerError(null);
+    if (status === "ready") {
+      setSaving(true);
+      try {
+        await request("PATCH", "/me/profile", { ...next, username: next.username || null });
+        await refreshMe();
+      } catch (e) {
+        setServerError(e instanceof Error ? e.message : "Couldn't save your profile.");
+        setSaving(false);
+        return;
+      }
+      setSaving(false);
+    }
+    await update(next);
+    toast(status === "ready" ? "Profile saved" : "Profile saved on this device", "success");
     router.back();
   };
 
@@ -63,13 +81,13 @@ export default function EditProfile() {
               </Tap>
             ))}
           </View>
-          <Text variant="caption" tone="tertiary" style={{ marginTop: 8 }}>Photo uploads arrive with profile sync in Phase 2.</Text>
+          <Text variant="caption" tone="tertiary" style={{ marginTop: 8 }}>Photo uploads arrive with media storage in a later update.</Text>
         </View>
 
         <Field label="Display name" value={displayName} onChangeText={setDisplayName} maxLength={40} />
-        <Field label="Username" value={username} onChangeText={(v) => setUsername(v.toLowerCase().replace(/[^a-z0-9_]/g, ""))} autoCapitalize="none" error={usernameError} hint="Usernames are reserved for you when profile sync launches." />
+        <Field label="Username" value={username} onChangeText={(v) => setUsername(v.toLowerCase().replace(/[^a-z0-9_]/g, ""))} autoCapitalize="none" error={usernameError ?? serverError} hint={status === "ready" ? "Unique across HENSENG. People can find you by it." : "Saved on this device."} />
         <Field label="Bio" value={bio} onChangeText={setBio} multiline maxLength={160} style={{ minHeight: 90, textAlignVertical: "top" }} hint={`${bio.length}/160`} />
-        <Button label="Save profile" onPress={() => void save()} disabled={!!usernameError} />
+        <Button label="Save profile" loading={saving} onPress={() => void save()} disabled={!!usernameError} />
       </View>
     </Screen>
   );

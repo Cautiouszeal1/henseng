@@ -6,10 +6,11 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { PREVIEW_CHATS, type PreviewChat } from "../../data/preview";
 import { ChatThread } from "../../features/chat-thread";
+import { useApi } from "../../api/api-context";
 import { useProfile } from "../../profile/profile-context";
 import { Avatar } from "../../ui/avatar";
 import { LogoMark } from "../../ui/logo";
-import { Sheet, useToast } from "../../ui/overlays";
+import { Sheet } from "../../ui/overlays";
 import { Button, Counter, EmptyState, IconButton, PreviewBanner, SearchField, Tap, Text } from "../../ui/primitives";
 import { useLayout, useTheme } from "../../ui/theme";
 import { buttonGradient, radius } from "../../ui/tokens";
@@ -67,7 +68,7 @@ export default function Chats() {
   const { isWide } = useLayout();
   const insets = useSafeAreaInsets();
   const { profile } = useProfile();
-  const toast = useToast();
+  const { me } = useApi();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [selected, setSelected] = useState<string>(PREVIEW_CHATS[0]!.id);
@@ -89,7 +90,7 @@ export default function Chats() {
         <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
           {!isWide && <LogoMark size={34} />}
           <Text variant="title" style={{ flex: 1 }} accessibilityRole="header">Chats</Text>
-          <IconButton icon={Bell} label="Notifications" onPress={() => toast("Notifications arrive in Phase 2.")} />
+          <IconButton icon={Bell} label="Notifications" badge={me?.unreadNotifications || undefined} onPress={() => router.push("/notifications")} />
           {!isWide && (
             <Tap onPress={() => router.push("/profile")} accessibilityLabel="Your profile" haptic={false}>
               <Avatar name={profile.displayName || "You"} size={40} presence={profile.showOnline ? "online" : undefined} gradientIndex={profile.avatarIndex} />

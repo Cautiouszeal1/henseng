@@ -18,11 +18,17 @@ import {
   Wallet,
   Eye,
   MessageSquareLock,
+  Cloud,
+  CloudOff,
+  Laptop,
   type LucideIcon,
 } from "lucide-react-native";
 import { useState, type ReactNode } from "react";
 import { Platform, Switch, View } from "react-native";
+import { useApi, useApiQuery } from "../../api/api-context";
+import type { CommunityCard, Device } from "../../api/types";
 import { PREVIEW_COMMUNITIES } from "../../data/preview";
+import { router as nav } from "expo-router";
 import { useProfile } from "../../profile/profile-context";
 import { Avatar } from "../../ui/avatar";
 import { Sheet, useToast } from "../../ui/overlays";
@@ -80,7 +86,13 @@ export default function ProfileScreen() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const cover = coverGradients[profile.coverIndex % coverGradients.length]!;
-  const joined = PREVIEW_COMMUNITIES.filter((c) => c.joined);
+  const api = useApi();
+  const live = api.status !== "off";
+  const devices = useApiQuery<{ devices: Device[] }>(live ? "/me/devices" : null);
+  const myCommunities = useApiQuery<{ communities: CommunityCard[] }>(live ? "/communities?scope=joined" : null);
+  const joined: { id: string; name: string; avatarIndex?: number; slug?: string }[] = live
+    ? (myCommunities.data?.communities ?? []).map((c) => ({ id: c.id, name: c.name, avatarIndex: c.avatarIndex, slug: c.slug }))
+    : PREVIEW_COMMUNITIES.filter((c) => c.joined);
 
   const closeSheet = () => {
     setSheet(null);
@@ -156,7 +168,7 @@ export default function ProfileScreen() {
       <View>
         <SectionHeader title="Privacy" />
         <Group>
-          <Row icon={Eye} label="Show when I'm online" right={<Switch value={profile.showOnline} onValueChange={(v) => void update({ showOnline: v })} trackColor={{ true: theme.accent, false: theme.surface }} thumbColor="#FFFFFF" accessibilityLabel="Show when I'm online" />} />
+          <Row icon={Eye} label="Show when I'm online" right={<Switch value={profile.showOnline} onValueChange={(v) => { void update({ showOnline: v }); if (api.status === "ready") void api.request("PATCH", "/me/profile", { showOnline: v }).catch(() => undefined); }} trackColor={{ true: theme.accent, false: theme.surface }} thumbColor="#FFFFFF" accessibilityLabel="Show when I'm online" />} />
           <Row icon={MessageSquareLock} label="Read receipts" right={<Switch value={profile.readReceipts} onValueChange={(v) => void update({ readReceipts: v })} trackColor={{ true: theme.accent, false: theme.surface }} thumbColor="#FFFFFF" accessibilityLabel="Read receipts" />} />
           <Row
             icon={MessageSquareLock}
@@ -165,7 +177,9 @@ export default function ProfileScreen() {
             onPress={() => void update({ allowMessagesFrom: profile.allowMessagesFrom === "contacts" ? "everyone" : "contacts" })}
           />
         </Group>
-        <Text variant="caption" tone="tertiary" style={{ marginTop: 8 }}>Privacy settings are saved on this device and applied when messaging launches in Phase 2.</Text>
+        <Text variant="caption" tone="tertiary" style={{ marginTop: 8 }}>
+          {live ? "Online status syncs to your HENSENG profile. Read receipts and message requests apply when private chats launch." : "Privacy settings are saved on this device."}
+        </Text>
       </View>
 
       <View>
@@ -180,8 +194,42 @@ export default function ProfileScreen() {
       <View>
         <SectionHeader title="Notifications and devices" />
         <Group>
-          <Row icon={Bell} label="Notifications" value="Messages, communities and transactions" right={<Pill label="Phase 2" />} />
-          <Row icon={Smartphone} label="This device" value={`${Platform.OS === "web" ? "Web browser" : Platform.OS === "ios" ? "iPhone / iPad" : "Android"} · active now`} right={<Pill label="Current" tone="positive" />} />
+          <Row icon={Bell} label="Notifications" value={live ? "Announcements, role changes and account alerts" : "Not connected in this build"} onPress={() => nav.push("/notifications")} right={api.me?.unreadNotifications ? <Pill label={`${api.me.unreadNotifications} new`} tone="accent" /> : undefined} />
+          <Row
+            icon={live && api.status === "ready" ? Cloud : CloudOff}
+            label={api.status === "ready" ? "Connected to HENSENG" : api.status === "connecting" ? "Connecting…" : api.status === "error" ? "Can't reach HENSENG" : "Offline build"}
+            value={api.status === "ready" ? "Profile and communities sync across your devices" : api.status === "error" ? api.error ?? "Tap to retry" : "Profile is saved on this device only"}
+            onPress={api.status === "error" ? api.retry : undefined}
+          />
+          {live && devices.data ? (
+            devices.data.devices.map((d) => (
+              <Row
+                key={d.id}
+                icon={d.platform === "web" || d.platform === "extension" ? Laptop : Smartphone}
+                label={d.deviceName || (d.platform === "ios" ? "iPhone / iPad" : d.platform === "android" ? "Android" : d.platform === "extension" ? "Chrome extension" : "Web browser")}
+                value={`Signed in ${new Date(d.createdAt).toLocaleDateString()} · last active ${new Date(d.lastUsedAt).toLocaleDateString()}`}
+                right={
+                  d.current ? (
+                    <Pill label="This device" tone="positive" />
+                  ) : (
+                    <Tap
+                      onPress={async () => {
+                        await api.request("DELETE", `/me/devices/${d.id}`).catch(() => undefined);
+                        toast("Signed out of that device", "success");
+                        await devices.reload();
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel="Sign out of this device"
+                    >
+                      <Text variant="caption" tone="negative">Sign out</Text>
+                    </Tap>
+                  )
+                }
+              />
+            ))
+          ) : (
+            <Row icon={Smartphone} label="This device" value={`${Platform.OS === "web" ? "Web browser" : Platform.OS === "ios" ? "iPhone / iPad" : "Android"} · active now`} right={<Pill label="Current" tone="positive" />} />
+          )}
         </Group>
       </View>
 
@@ -203,13 +251,13 @@ export default function ProfileScreen() {
             <View>
               <SectionHeader title="Communities" />
               <Card style={{ gap: 12 }}>
-                {joined.map((c) => (
-                  <View key={c.id} style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-                    <Avatar name={c.name} seed={c.id} size={40} square />
+                {joined.length ? joined.map((c) => (
+                  <Tap key={c.id} haptic={false} disabled={!c.slug} onPress={() => c.slug && nav.push({ pathname: "/community/[id]", params: { id: c.slug } })} style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                    <Avatar name={c.name} seed={c.id} size={40} square gradientIndex={c.avatarIndex} />
                     <Text variant="bodyStrong" style={{ flex: 1 }}>{c.name}</Text>
-                    <Pill label="Preview" tone="warning" />
-                  </View>
-                ))}
+                    {live ? null : <Pill label="Preview" tone="warning" />}
+                  </Tap>
+                )) : <Text tone="secondary">You haven't joined any communities yet.</Text>}
               </Card>
             </View>
           </View>
