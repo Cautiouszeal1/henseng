@@ -4,10 +4,11 @@ import { API_URL, useApi } from "../api/api-context";
 import type { Person } from "../api/types";
 import { useResolveRecipient } from "../wallet/resolve-recipient";
 import { useWallet } from "../wallet/wallet-context";
-import { getDbKey } from "./key-storage";
 import { type ChatMessage, type MessagingClient } from "./model";
+import { onDeviceWipe } from "../wallet/device-wipe";
+import { deleteDbKey, getDbKey } from "./key-storage";
 import { createMemoryClient } from "./memory-client";
-import { connectXmtp } from "./xmtp";
+import { clearLocalMessagingStorage, connectXmtp } from "./xmtp";
 
 /**
  * End-to-end encrypted messaging over XMTP. Enabled by EXPO_PUBLIC_XMTP_ENV
@@ -54,6 +55,23 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
   const [version, setVersion] = useState(0);
   const [profiles, setProfiles] = useState<Record<string, Person>>({});
   const [lastRead, setLastRead] = useState<Record<string, number>>({});
+
+  // Removing the wallet erases this device's messages: the local database, and on phones the key that decrypts it.
+  const wipeRef = useRef({ client: null as MessagingClient | null, address: null as string | null });
+  wipeRef.current = { client, address };
+  useEffect(
+    () =>
+      onDeviceWipe(async () => {
+        const { client: c, address: a } = wipeRef.current;
+        await c?.wipeLocal().catch(() => undefined);
+        await clearLocalMessagingStorage().catch(() => undefined);
+        if (a) await deleteDbKey(a).catch(() => undefined);
+        setClient(null);
+        setProfiles({});
+        setLastRead({});
+      }),
+    [],
+  );
   const listeners = useRef(new Set<Listener>());
   const pendingLookups = useRef(new Set<string>());
   /** Addresses already asked about, including ones with no HENSENG profile, so misses aren't re-fetched every render. */

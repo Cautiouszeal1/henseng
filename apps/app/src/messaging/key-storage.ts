@@ -22,3 +22,8 @@ export async function getDbKey(address: string): Promise<Uint8Array> {
   await SecureStore.setItemAsync(k, toHex(key), OPTS);
   return key;
 }
+
+/** Deletes this wallet's message-database key; without it the encrypted database can never be read. */
+export async function deleteDbKey(address: string): Promise<void> {
+  await SecureStore.deleteItemAsync(`henseng.xmtpdb.${address.toLowerCase()}`, OPTS);
+}

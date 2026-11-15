@@ -1,3 +1,4 @@
+import { attemptsLeft } from "../wallet/unlock-guard";
 import { LockKeyhole } from "lucide-react-native";
 import { useState } from "react";
 import { View } from "react-native";
@@ -23,7 +24,10 @@ export default function Unlock() {
     try {
       await unlock(password);
     } catch (e) {
-      setError(e instanceof WrongPasswordError ? "That password is not correct." : e instanceof Error ? e.message : "Could not unlock.");
+      if (e instanceof WrongPasswordError) {
+        const left = await attemptsLeft();
+        setError(left > 0 ? `That password is not correct. ${left} ${left === 1 ? "try" : "tries"} left before a short wait.` : "That password is not correct. Wait a moment before trying again.");
+      } else setError(e instanceof Error ? e.message : "Could not unlock.");
       setBusy(false);
     }
   };

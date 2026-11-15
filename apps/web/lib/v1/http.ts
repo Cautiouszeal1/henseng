@@ -36,6 +36,13 @@ export async function parseBody<T>(req: NextRequest, schema: ZodType<T>): Promis
   }
 }
 
+/**
+ * The caller's IP for rate limiting. Prefers headers set by the hosting platform (which callers
+ * cannot forge) over the first x-forwarded-for entry, which a client can set to anything.
+ */
 export function ip(req: NextRequest) {
-  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const platform = req.headers.get("x-vercel-forwarded-for") ?? req.headers.get("x-real-ip");
+  if (platform) return platform.split(",")[0]!.trim();
+  const xff = req.headers.get("x-forwarded-for")?.split(",").map((s) => s.trim()).filter(Boolean);
+  return xff?.length ? xff[xff.length - 1]! : "unknown";
 }

@@ -20,6 +20,7 @@ import { buildTransfer, estimateFee, sendErrorMessage, type FeeEstimate, type Tx
 import { AddressBlock, Notice } from "../wallet/send-ui";
 import { TokenIcon } from "../wallet/token-icon";
 import { formatUsd, usePortfolio, type WalletToken } from "../wallet/use-portfolio";
+import { passwordErrorMessage } from "../wallet/unlock-guard";
 import { useWallet } from "../wallet/wallet-context";
 
 type Review = {
@@ -193,7 +194,13 @@ export default function SendScreen() {
     setPasswordError(null);
     setSendError(null);
     try {
-      if (!(await verifyPassword(password))) return setPasswordError("That password isn't right.");
+      let ok: boolean;
+      try {
+        ok = await verifyPassword(password);
+      } catch (e) {
+        return setPasswordError(passwordErrorMessage(e) ?? "Couldn't check your password.");
+      }
+      if (!ok) return setPasswordError("That password isn't right.");
       const h = await sendTransaction({ ...review.tx, gas: review.fee.gas });
       activity.add({
         hash: h,
@@ -280,7 +287,7 @@ export default function SendScreen() {
         {body(
           <>
             <View style={{ alignItems: "center", gap: 10, paddingVertical: 8 }}>
-              <TokenIcon symbol={review.token.symbol} network={rNet} size={56} />
+              <TokenIcon token={review.token} network={rNet} size={56} />
               <Text variant="display" style={{ textAlign: "center" }}>{formatTokenAmount(review.amount, review.token.decimals, 8)} {review.token.symbol}</Text>
               {amountUsd !== undefined ? <Text tone="secondary">≈ {formatUsd(amountUsd)}</Text> : null}
               {rNet.testnet ? <Pill label="Testnet · no real value" tone="warning" /> : null}
@@ -356,7 +363,7 @@ export default function SendScreen() {
             <View style={{ gap: 8 }}>
               <Text variant="label" tone="secondary">Asset</Text>
               <Tap onPress={() => setPicking(true)} accessibilityRole="button" accessibilityLabel={`Asset: ${token.symbol} on ${network?.name}. Change`} style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderRadius: radius.md, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }}>
-                <TokenIcon symbol={token.symbol} network={network} size={38} />
+                <TokenIcon token={token} network={network} size={38} />
                 <View style={{ flex: 1 }}>
                   <Text variant="subheading">{token.symbol} <Text tone="secondary">on {network?.name}</Text></Text>
                   <Text variant="caption" tone="secondary">Balance: {balance !== undefined ? formatTokenAmount(balance, token.decimals) : "—"} {token.symbol}</Text>
@@ -408,7 +415,7 @@ export default function SendScreen() {
       <Sheet visible={picking} onClose={() => setPicking(false)} title="Choose an asset">
         {sendable.map((h) => (
           <Tap key={h.key} onPress={() => { setTokenK(h.key); setPicking(false); setAmountInput(""); setFormError(null); }} accessibilityRole="button" accessibilityLabel={`${h.token.symbol} on ${h.network.name}`} style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10 }}>
-            <TokenIcon symbol={h.token.symbol} network={h.network} size={38} />
+            <TokenIcon token={h.token} network={h.network} size={38} />
             <View style={{ flex: 1 }}>
               <Text variant="subheading">{h.token.symbol}</Text>
               <Text variant="caption" tone="secondary">{h.network.name}</Text>

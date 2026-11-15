@@ -59,7 +59,9 @@ export default function PrivacyPage() {
         items={[
           "Your encrypted wallet (recovery phrase, protected by your password). On iPhone and Android it's held in the system's secure storage, and Android backups of the app are switched off.",
           "Your encrypted chat database (XMTP), list of sent transactions, tokens you added, read markers and settings.",
-          "Removing the wallet from the device deletes this data. Your funds stay on the blockchain and can be restored with your recovery phrase.",
+          "The wallet locks itself after 15 minutes of inactivity. After 5 wrong passwords in a row, each new attempt has to wait, starting at 30 seconds and growing to 15 minutes.",
+          "On iPhone and Android, screens that show your recovery phrase block screenshots and screen recording, and the app hides its contents in the app switcher.",
+          "Removing the wallet erases all HENSENG data on the device: the encrypted wallet, chat database and its key, activity, added tokens, profile, settings and your sign-in. Your funds stay on the blockchain and can be restored with your recovery phrase.",
         ]}
       />
 

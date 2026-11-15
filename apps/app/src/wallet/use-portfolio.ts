@@ -5,6 +5,7 @@ import { formatUnits, getAddress, isAddress } from "viem";
 import { API_URL, useApi } from "../api/api-context";
 import { ALL_NETWORKS, networkFor, publicClient, type NetworkInfo } from "./networks";
 import { getSolBalance, getSplBalance } from "./solana-rpc";
+import { onDeviceWipe } from "./device-wipe";
 import { useWallet } from "./wallet-context";
 
 export interface WalletToken extends TokenInfo {
@@ -61,6 +62,15 @@ function usePortfolioState(address: `0x${string}` | null, solanaAddress: string 
   useEffect(() => {
     void AsyncStorage.getItem(CUSTOM_KEY).then((raw) => raw && setCustom(JSON.parse(raw) as WalletToken[]));
   }, []);
+  useEffect(
+    () =>
+      onDeviceWipe(() => {
+        setCustom([]);
+        setBalances({});
+        setUpdatedAt(null);
+      }),
+    [],
+  );
   const saveCustom = useCallback((list: WalletToken[]) => {
     setCustom(list);
     void AsyncStorage.setItem(CUSTOM_KEY, JSON.stringify(list));

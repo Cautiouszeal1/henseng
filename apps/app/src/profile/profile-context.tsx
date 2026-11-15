@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { onDeviceWipe } from "../wallet/device-wipe";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 /**
@@ -64,6 +65,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     await AsyncStorage.removeItem(KEY);
     setProfile(DEFAULT_PROFILE);
   }, []);
+  useEffect(() => onDeviceWipe(() => setProfile(DEFAULT_PROFILE)), []);
 
   const value = useMemo(() => ({ profile, ready, update, clear }), [profile, ready, update, clear]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

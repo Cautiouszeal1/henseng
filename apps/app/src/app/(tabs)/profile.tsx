@@ -38,8 +38,10 @@ import { Button, Card, Field, Pill, SectionHeader, Tap, Text } from "../../ui/pr
 import { Screen } from "../../ui/screen";
 import { useLayout, useTheme, type ThemePreference } from "../../ui/theme";
 import { ProfileCover } from "../../ui/art";
+import { NoScreenCapture } from "../../ui/privacy";
 import { radius } from "../../ui/tokens";
 import { vaultLocationLabel } from "../../wallet/vault-storage";
+import { passwordErrorMessage } from "../../wallet/unlock-guard";
 import { useWallet, WrongPasswordError } from "../../wallet/wallet-context";
 
 function Row({ icon: Icon, label, value, onPress, right, danger }: { icon: LucideIcon; label: string; value?: string; onPress?: () => void; right?: ReactNode; danger?: boolean }) {
@@ -279,6 +281,7 @@ export default function ProfileScreen() {
       <Sheet visible={sheet === "reveal"} onClose={closeSheet} title="Recovery phrase">
         {phrase ? (
           <>
+            <NoScreenCapture />
             <Text tone="negative" variant="caption">Never share these words. HENSENG support will never ask for them.</Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
               {phrase.split(" ").map((w, i) => (
@@ -304,7 +307,7 @@ export default function ProfileScreen() {
                 try {
                   setPhrase(await revealPhrase(password));
                 } catch (e) {
-                  setError(e instanceof WrongPasswordError ? "That password is not correct." : "Could not read the wallet.");
+                  setError(passwordErrorMessage(e) ?? "Could not read the wallet.");
                 } finally {
                   setBusy(false);
                 }
@@ -341,8 +344,8 @@ export default function ProfileScreen() {
               closeSheet();
               toast("Your HENSENG account was deleted", "success");
               lock();
-            } catch {
-              setError("Couldn't delete your account right now. Check your connection and try again.");
+            } catch (e) {
+              setError(passwordErrorMessage(e) ?? "Couldn't delete your account right now. Check your connection and try again.");
             } finally {
               setBusy(false);
             }
@@ -353,8 +356,8 @@ export default function ProfileScreen() {
 
       <Sheet visible={sheet === "remove"} onClose={closeSheet} title="Remove wallet?">
         <Text tone="secondary">
-          This deletes the encrypted wallet and your profile from this device. Your funds stay on the blockchain. You can only get them back
-          with your recovery phrase.
+          This erases all HENSENG data on this device: the encrypted wallet, your profile, the local chat database, activity, custom
+          tokens and your sign-in. Your funds stay on the blockchain. You can only get them back with your recovery phrase.
         </Text>
         <Button
           label="Remove wallet"

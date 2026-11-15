@@ -191,6 +191,34 @@ class WebXmtp implements MessagingClient {
     this.stops.forEach((s) => s());
     this.client.close();
   }
+
+  async wipeLocal() {
+    this.close();
+    await clearLocalMessagingStorage();
+  }
+}
+
+/**
+ * Browser/extension: XMTP keeps its database in this origin's private file storage (OPFS),
+ * unencrypted. Remove everything there so no messages remain after the wallet is removed.
+ */
+export async function clearLocalMessagingStorage(): Promise<void> {
+  const storage = (globalThis.navigator as Navigator | undefined)?.storage;
+  if (!storage?.getDirectory) return;
+  const root = await storage.getDirectory();
+  const names: string[] = [];
+  for await (const name of (root as unknown as { keys(): AsyncIterable<string> }).keys()) names.push(name);
+  for (const name of names) {
+    // A worker may still be releasing its handle for a moment after close(); retry briefly.
+    for (let i = 0; i < 5; i++) {
+      try {
+        await root.removeEntry(name, { recursive: true });
+        break;
+      } catch {
+        await new Promise((r) => setTimeout(r, 300));
+      }
+    }
+  }
 }
 
 export async function connectXmtp(opts: ConnectOptions): Promise<MessagingClient> {

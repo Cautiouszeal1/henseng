@@ -22,6 +22,7 @@ import { estimateFee, sendErrorMessage } from "../wallet/send";
 import { Notice } from "../wallet/send-ui";
 import { TokenIcon } from "../wallet/token-icon";
 import { formatUsd, usePortfolio } from "../wallet/use-portfolio";
+import { passwordErrorMessage } from "../wallet/unlock-guard";
 import { useWallet } from "../wallet/wallet-context";
 
 type Mode = "swap" | "bridge";
@@ -181,7 +182,13 @@ export default function SwapScreen() {
     if (!q || !address) return;
     setPasswordError(null);
     setWorkError(null);
-    if (!(await verifyPassword(password))) return setPasswordError("That password isn't right.");
+    let ok: boolean;
+    try {
+      ok = await verifyPassword(password);
+    } catch (e) {
+      return setPasswordError(passwordErrorMessage(e) ?? "Couldn't check your password.");
+    }
+    if (!ok) return setPasswordError("That password isn't right.");
     setStep("working");
     let current = q;
     try {
@@ -356,7 +363,7 @@ export default function SwapScreen() {
           <>
             <Card style={{ gap: 14 }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-                <TokenIcon symbol={from.token.symbol} network={fromNet} size={40} />
+                <TokenIcon token={from.token} network={fromNet} size={40} />
                 <View style={{ flex: 1 }}>
                   <Text variant="caption" tone="secondary">You pay · {fromNet.name}</Text>
                   <Text variant="heading">{formatTokenAmount(BigInt(q.fromAmount), from.token.decimals, 8)} {from.token.symbol}</Text>
@@ -364,7 +371,7 @@ export default function SwapScreen() {
                 {q.fromAmountUsd !== null ? <Text tone="secondary">{formatUsd(q.fromAmountUsd)}</Text> : null}
               </View>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-                <TokenIcon symbol={to.token.symbol} network={toNet} size={40} />
+                <TokenIcon token={to.token} network={toNet} size={40} />
                 <View style={{ flex: 1 }}>
                   <Text variant="caption" tone="secondary">You get · {toNet.name}</Text>
                   <Text variant="heading">~{formatTokenAmount(BigInt(q.toAmount), to.token.decimals, 8)} {to.token.symbol}</Text>
@@ -420,7 +427,7 @@ export default function SwapScreen() {
             </Text>
           )}
           <Tap onPress={() => setPicker(isFrom ? "fromToken" : "toToken")} accessibilityRole="button" accessibilityLabel={`${label} token: ${side.token.symbol}. Change`} style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingLeft: 6, paddingRight: 10, height: 42, borderRadius: radius.full, backgroundColor: theme.surface }}>
-            <TokenIcon symbol={side.token.symbol} size={30} />
+            <TokenIcon token={side.token} size={30} />
             <Text variant="bodyStrong">{side.token.symbol}</Text>
             <ChevronDown size={16} color={theme.textSecondary} />
           </Tap>
@@ -531,7 +538,7 @@ export default function SwapScreen() {
               setAmountInput("");
               setPicker(null);
             }} accessibilityRole="button" accessibilityLabel={t.symbol} style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10 }}>
-              <TokenIcon symbol={t.symbol} size={36} />
+              <TokenIcon token={t} size={36} />
               <View style={{ flex: 1 }}>
                 <Text variant="subheading">{t.symbol}</Text>
                 <Text variant="caption" tone="secondary">{t.name}</Text>

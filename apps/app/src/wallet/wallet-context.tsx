@@ -12,6 +12,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { AppState } from "react-native";
 import { createWalletClient, http } from "viem";
 import { networkFor, rpcUrl } from "./networks";
+import { wipeDeviceData } from "./device-wipe";
+import { guardedDecrypt } from "./unlock-guard";
 import { deleteVault, loadVault, saveVault } from "./vault-storage";
 
 /**
@@ -113,7 +115,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       setStatus("none");
       throw new Error("No wallet found on this device.");
     }
-    const payload = await decryptVault(vault, password); // throws WrongPasswordError
+    const payload = await guardedDecrypt(vault, password); // throws WrongPasswordError / TooManyAttemptsError
     phrase.current = payload.mnemonic;
     setSolanaAddress(deriveSolanaKeypair(payload.mnemonic).address);
     lastActive.current = Date.now();
@@ -124,14 +126,16 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const revealPhrase = useCallback(async (password: string) => {
     const vault = await loadVault();
     if (!vault) throw new Error("No wallet found on this device.");
-    return (await decryptVault(vault, password)).mnemonic;
+    return (await guardedDecrypt(vault, password)).mnemonic;
   }, []);
 
   const removeWallet = useCallback(async () => {
+    // Erase everything else HENSENG keeps on this device first (while the address is still known),
+    // then the encrypted vault itself.
+    await wipeDeviceData();
     await deleteVault();
     phrase.current = null;
     setAddress(null);
-    setSolanaAddress(null);
     setSolanaAddress(null);
     setStatus("none");
   }, []);
@@ -146,7 +150,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     const vault = await loadVault();
     if (!vault) return false;
     try {
-      await decryptVault(vault, password);
+      await guardedDecrypt(vault, password);
       return true;
     } catch (e) {
       if (e instanceof WrongPasswordError) return false;

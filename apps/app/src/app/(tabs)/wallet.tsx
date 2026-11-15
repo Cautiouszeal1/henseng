@@ -172,7 +172,7 @@ export default function WalletScreen() {
               return (
                 <View key={h.key} style={{ flexDirection: "row", alignItems: "center", borderTopWidth: i ? 1 : 0, borderTopColor: theme.border }}>
                   <Tap onPress={() => openSend(h)} accessibilityRole="button" accessibilityLabel={`${h.token.name} on ${h.network.name}: ${formatTokenAmount(h.balance, h.token.decimals)} ${h.token.symbol}. Send`} haptic={false} style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 14, paddingLeft: 16, paddingRight: h.token.custom ? 4 : 16, paddingVertical: 14 }}>
-                    <TokenIcon symbol={h.token.symbol} network={h.network} />
+                    <TokenIcon token={h.token} network={h.network} />
                     <View style={{ flex: 1 }}>
                       <Text variant="subheading" numberOfLines={1}>{h.token.name}</Text>
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>

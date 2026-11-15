@@ -153,7 +153,15 @@ class NativeXmtp implements MessagingClient {
   close() {
     this.stopStream?.();
   }
+
+  async wipeLocal() {
+    this.close();
+    await this.client.deleteLocalDatabase();
+  }
 }
+
+/** Native: the database is encrypted with a per-wallet key; deleting the key (key-storage) makes any leftover file unreadable. */
+export async function clearLocalMessagingStorage(): Promise<void> {}
 
 export async function connectXmtp(opts: ConnectOptions): Promise<MessagingClient> {
   const signer: Signer = {

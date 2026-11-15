@@ -6,3 +6,6 @@
 export async function getDbKey(): Promise<Uint8Array> {
   return new Uint8Array(32);
 }
+
+/** Web: no separate key (the browser SDK manages its own storage, cleared by clearLocalMessagingStorage). */
+export async function deleteDbKey(_address: string): Promise<void> {}

@@ -3,6 +3,7 @@ import { Eye, KeyRound, ListChecks, ScrollText, ShieldCheck, TriangleAlert, User
 import { useMemo, useState } from "react";
 import { View } from "react-native";
 import { USERNAME_RE, useProfile } from "../profile/profile-context";
+import { NoScreenCapture } from "../ui/privacy";
 import { OnboardingFrame } from "../ui/onboarding-frame";
 import { Button, Field, Tap, Text } from "../ui/primitives";
 import { useToast } from "../ui/overlays";
@@ -70,6 +71,7 @@ export default function CreateWallet() {
         onBack={() => setStep("intro")}
         footer={<Button label="I've written it down" disabled={!revealed} onPress={() => setStep("confirm")} />}
       >
+        <NoScreenCapture />
         <Tap
           onPress={() => setRevealed(true)}
           haptic={false}

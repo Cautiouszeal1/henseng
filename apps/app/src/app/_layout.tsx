@@ -11,6 +11,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ApiProvider } from "../api/api-context";
 import { MessagingProvider } from "../messaging/messaging-context";
+import { AppSwitcherShield } from "../ui/privacy";
 import { ActivityProvider } from "../wallet/activity";
 import { PortfolioProvider } from "../wallet/use-portfolio";
 import { ProfileProvider } from "../profile/profile-context";
@@ -85,6 +86,7 @@ export default function RootLayout() {
                     <ActivityProvider>
                       <MessagingProvider>
                         <RootNavigator />
+                        <AppSwitcherShield />
                       </MessagingProvider>
                     </ActivityProvider>
                   </PortfolioProvider>

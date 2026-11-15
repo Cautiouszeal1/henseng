@@ -5,6 +5,7 @@ import { useApi } from "../api/api-context";
 import { publicClient } from "./networks";
 import { signatureStatus } from "./solana-rpc";
 import { usePortfolio } from "./use-portfolio";
+import { onDeviceWipe } from "./device-wipe";
 import { useWallet } from "./wallet-context";
 
 /**
@@ -58,6 +59,7 @@ export function ActivityProvider({ children }: { children: ReactNode }) {
   const api = useApi();
   const [items, setItems] = useState<ActivityItem[]>([]);
   const loadedFor = useRef<string | null>(null);
+  useEffect(() => onDeviceWipe(() => setItems([])), []);
 
   useEffect(() => {
     setItems([]);

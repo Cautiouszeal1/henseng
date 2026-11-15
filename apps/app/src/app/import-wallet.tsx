@@ -2,6 +2,7 @@ import { Download } from "lucide-react-native";
 import { isValidMnemonic, normalizeMnemonic, passwordProblems, unknownWords } from "@henseng/wallet";
 import { useState } from "react";
 import { OnboardingFrame } from "../ui/onboarding-frame";
+import { NoScreenCapture } from "../ui/privacy";
 import { useToast } from "../ui/overlays";
 import { Button, Field, Text } from "../ui/primitives";
 import { useWallet } from "../wallet/wallet-context";
@@ -46,6 +47,7 @@ export default function ImportWallet() {
       subtitle="Enter the 12 or 24-word recovery phrase from any standard Ethereum wallet."
       footer={<Button label={busy ? "Encrypting…" : "Import wallet"} loading={busy} onPress={() => void submit()} disabled={!clean || !password} />}
     >
+      <NoScreenCapture />
       <Field
         label="Recovery phrase"
         value={phrase}
@@ -56,6 +58,8 @@ export default function ImportWallet() {
         autoCorrect={false}
         autoComplete="off"
         spellCheck={false}
+        importantForAutofill="no"
+        textContentType="none"
         secureTextEntry={false}
         placeholder="word1 word2 word3 …"
         style={{ minHeight: 120, textAlignVertical: "top" }}

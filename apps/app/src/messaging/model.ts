@@ -51,6 +51,8 @@ export interface MessagingClient {
   /** Streams every new message in every conversation. Returns a stop function. */
   streamAll(onMessage: (m: ChatMessage) => void): () => void;
   close(): void;
+  /** Permanently deletes this device's local message database (used when the wallet is removed). */
+  wipeLocal(): Promise<void>;
 }
 
 export interface ConnectOptions {

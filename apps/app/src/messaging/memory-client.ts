@@ -113,6 +113,10 @@ export function createMemoryClient(address: string): MessagingClient {
       listeners.add(fn);
       return () => listeners.delete(fn);
     },
+    async wipeLocal() {
+      chats.length = 0;
+      msgs.length = 0;
+    },
     close() {
       listeners.clear();
     },
