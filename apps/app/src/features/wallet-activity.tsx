@@ -19,6 +19,7 @@ type Row = {
   counterparty: string;
   time: number | null;
   status: "pending" | "confirmed" | "failed";
+  note?: string;
 };
 
 function timeAgo(ms: number) {
@@ -44,11 +45,19 @@ export function WalletActivity({ includeTestnets, mask, address }: { includeTest
         hash: i.hash,
         chainId: i.chainId,
         direction: "out",
-        title: `Sent ${i.symbol}`,
+        title:
+          i.kind === "swap"
+            ? `Swapped ${i.symbol} → ${i.toSymbol}`
+            : i.kind === "bridge"
+              ? `Bridged ${i.symbol} to ${networkInfo(i.toChainId ?? 0)?.name ?? "another network"}`
+              : i.kind === "approve"
+                ? `Allowed ${i.toLabel ?? "an app"} to use ${i.symbol}`
+                : `Sent ${i.symbol}`,
         amount: formatTokenAmount(BigInt(i.amount), i.decimals),
-        counterparty: i.toLabel ?? shortAddress(i.to),
+        counterparty: i.kind === "send" ? i.toLabel ?? shortAddress(i.to) : `via ${i.toLabel ?? "LI.FI"}`,
         time: i.createdAt,
-        status: i.status,
+        status: i.kind === "bridge" && i.status === "confirmed" && i.bridge !== "done" ? (i.bridge === "pending" ? "pending" : i.bridge === "partial" || i.bridge === "refunded" ? "confirmed" : "failed") : i.status,
+        note: i.kind === "bridge" ? (i.bridge === "pending" && i.status === "confirmed" ? "Arriving" : i.bridge === "refunded" ? "Refunded" : i.bridge === "partial" ? "Arrived (other token)" : i.bridge === "unknown" ? "Check explorer" : undefined) : undefined,
       }));
     const seen = new Set(items.map((i) => i.hash.toLowerCase()));
     let hidden = 0;
@@ -102,13 +111,13 @@ export function WalletActivity({ includeTestnets, mask, address }: { includeTest
                 <View style={{ flex: 1, gap: 2 }}>
                   <Text variant="subheading" numberOfLines={1}>{r.title}</Text>
                   <Text variant="caption" tone="secondary" numberOfLines={1}>
-                    {r.direction === "in" ? "From" : "To"} {r.counterparty} · {net?.name}{r.time ? ` · ${timeAgo(r.time)}` : ""}
+                    {r.counterparty.startsWith("via ") ? r.counterparty : `${r.direction === "in" ? "From" : "To"} ${r.counterparty}`} · {net?.name}{r.time ? ` · ${timeAgo(r.time)}` : ""}
                   </Text>
                 </View>
                 <View style={{ alignItems: "flex-end", gap: 4 }}>
                   {r.amount ? <Text variant="bodyStrong" style={{ color: r.direction === "in" ? theme.positive : theme.text }}>{r.amount.startsWith("#") ? "" : r.direction === "in" ? "+" : "−"}{mask(r.amount)}</Text> : null}
                   {r.status !== "confirmed" || r.key.startsWith("l:") ? (
-                    <Pill label={r.status === "pending" ? "Pending" : r.status === "confirmed" ? "Confirmed" : "Failed"} tone={r.status === "pending" ? "warning" : r.status === "confirmed" ? "positive" : "negative"} />
+                    <Pill label={r.note ?? (r.status === "pending" ? "Pending" : r.status === "confirmed" ? "Confirmed" : "Failed")} tone={r.status === "pending" ? "warning" : r.status === "confirmed" ? "positive" : "negative"} />
                   ) : null}
                 </View>
               </Tap>

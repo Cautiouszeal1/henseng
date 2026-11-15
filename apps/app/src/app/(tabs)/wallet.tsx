@@ -10,7 +10,7 @@ import QRCode from "react-native-qrcode-svg";
 import { WalletActivity } from "../../features/wallet-activity";
 import { WalletNfts } from "../../features/wallet-nfts";
 import { Sheet, useToast } from "../../ui/overlays";
-import { Button, Card, EmptyState, Field, IconButton, Pill, Skeleton, Tap, Text } from "../../ui/primitives";
+import { Button, Card, Field, IconButton, Pill, Skeleton, Tap, Text } from "../../ui/primitives";
 import { Screen } from "../../ui/screen";
 import { useLayout, useTheme } from "../../ui/theme";
 import { radius } from "../../ui/tokens";
@@ -19,7 +19,9 @@ import { TokenIcon } from "../../wallet/token-icon";
 import { formatUsd, usePortfolio, type Holding } from "../../wallet/use-portfolio";
 import { useWallet } from "../../wallet/wallet-context";
 
-type SheetName = "receive" | "send" | "swap" | "bridge" | "add" | null;
+const listNames = (names: string[]) => (names.length < 2 ? names.join("") : `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`);
+
+type SheetName = "receive" | "send" | "add" | null;
 
 function ActionButton({ icon: Icon, label, onPress }: { icon: typeof ArrowUpRight; label: string; onPress: () => void }) {
   const { theme } = useTheme();
@@ -97,7 +99,7 @@ export default function WalletScreen() {
     if (p.prices.status === "error") return "Prices couldn't be loaded, so there's no USD total right now. Your balances below are live.";
     if (p.prices.status === "loading") return "Loading prices…";
     const down = p.failedNetworks.filter((n) => !n.testnet);
-    const parts = [down.length ? `${down.map((n) => n.name).join(", ")} couldn't be reached, so this total is partial.` : "Ethereum, Base, Arbitrum and Solana. Testnet tokens aren't counted."];
+    const parts = [down.length ? `${listNames(down.map((n) => n.name))} couldn't be reached, so this total is partial.` : "Ethereum, Base, Arbitrum and Solana. Testnet tokens aren't counted."];
     if (p.hasCustomHoldings) parts.push("Tokens you added aren't counted.");
     return parts.join(" ");
   })();
@@ -148,8 +150,8 @@ export default function WalletScreen() {
     <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
       <ActionButton icon={ArrowDownToLine} label="Receive" onPress={() => setSheet("receive")} />
       <ActionButton icon={ArrowUpRight} label="Send" onPress={onSend} />
-      <ActionButton icon={Repeat} label="Swap" onPress={() => setSheet("swap")} />
-      <ActionButton icon={ArrowLeftRight} label="Bridge" onPress={() => setSheet("bridge")} />
+      <ActionButton icon={Repeat} label="Swap" onPress={() => router.push({ pathname: "/swap", params: { mode: "swap" } })} />
+      <ActionButton icon={ArrowLeftRight} label="Bridge" onPress={() => router.push({ pathname: "/swap", params: { mode: "bridge" } })} />
     </View>
   );
 
@@ -296,14 +298,6 @@ export default function WalletScreen() {
         <Button label="Add token" loading={adding} disabled={!addInput.trim()} onPress={() => void addToken()} />
       </Sheet>
 
-      <Sheet visible={sheet === "swap" || sheet === "bridge"} onClose={() => setSheet(null)} title={sheet === "swap" ? "Swap" : "Bridge"}>
-        <EmptyState
-          icon={sheet === "swap" ? Repeat : ArrowLeftRight}
-          title={sheet === "swap" ? "Swapping arrives in Phase 4" : "Bridging arrives in Phase 4"}
-          body={sheet === "swap" ? "Real quotes from 0x and other aggregators, with every fee shown before you sign." : "Move assets between networks through vetted bridges, tracked until they arrive."}
-        />
-        <Button label="Got it" kind="secondary" onPress={() => setSheet(null)} />
-      </Sheet>
     </Screen>
   );
 }

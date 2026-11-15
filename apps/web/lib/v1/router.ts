@@ -33,6 +33,8 @@ const ROUTES: [Method, string, h.Handler][] = [
   ["GET", "prices", h.listPrices],
   ["GET", "wallet/transfers", h.walletTransfers],
   ["GET", "wallet/nfts", h.walletNfts],
+  ["GET", "swap/quote", h.swapQuote],
+  ["GET", "swap/status", h.swapStatus],
 ];
 
 export function match(method: Method, segments: string[]): { handler: h.Handler; params: Record<string, string> } | null {

@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { isSolanaChain } from "@henseng/wallet";
+import { useApi } from "../api/api-context";
 import { publicClient } from "./networks";
 import { signatureStatus } from "./solana-rpc";
 import { usePortfolio } from "./use-portfolio";
@@ -15,7 +16,7 @@ export interface ActivityItem {
   /** EVM transaction hash, or Solana signature */
   hash: string;
   chainId: number;
-  kind: "send";
+  kind: "send" | "swap" | "bridge" | "approve";
   symbol: string;
   decimals: number;
   amount: string; // base units as a string (bigint isn't JSON-safe)
@@ -25,6 +26,15 @@ export interface ActivityItem {
   status: "pending" | "confirmed" | "failed";
   /** Max fee shown at review time (wei) */
   maxFee?: string;
+  /** Swaps and bridges: what was expected back */
+  toSymbol?: string;
+  toDecimals?: number;
+  toAmount?: string;
+  toChainId?: number;
+  /** Bridges: route id for the status service, and progress on the destination network */
+  bridgeTool?: string;
+  bridge?: "pending" | "done" | "refunded" | "partial" | "failed" | "unknown";
+  receivedAmount?: string;
 }
 
 interface ActivityApi {
@@ -38,10 +48,14 @@ interface ActivityApi {
 const Ctx = createContext<ActivityApi | null>(null);
 const keyFor = (address: string) => `henseng.activity.v1.${address.toLowerCase()}`;
 const POLL_MS = 4_000;
+const BRIDGE_POLL_MS = 10_000;
+/** After this long without a final answer, stop polling and point to the explorer. */
+const BRIDGE_GIVE_UP_MS = 2 * 60 * 60_000;
 
 export function ActivityProvider({ children }: { children: ReactNode }) {
   const { address } = useWallet();
   const { refresh: refreshBalances } = usePortfolio();
+  const api = useApi();
   const [items, setItems] = useState<ActivityItem[]>([]);
   const loadedFor = useRef<string | null>(null);
 
@@ -88,12 +102,42 @@ export function ActivityProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingKey]);
 
+  // Bridges: once the source transaction is confirmed, follow the transfer to the destination.
+  const bridging = items.filter((i) => i.kind === "bridge" && i.status === "confirmed" && i.bridge === "pending");
+  const bridgingKey = bridging.map((b) => b.hash).join(",");
+  useEffect(() => {
+    if (!bridgingKey || api.status !== "ready") return;
+    const tick = async () => {
+      for (const b of items.filter((i) => i.kind === "bridge" && i.status === "confirmed" && i.bridge === "pending")) {
+        try {
+          const s = await api.request<{ status: string; substatus: string | null; receiving: { amount: string | null } | null }>(
+            "GET",
+            `/swap/status?${new URLSearchParams({ txHash: b.hash, fromChain: String(b.chainId), toChain: String(b.toChainId), bridge: b.bridgeTool ?? "" })}`,
+          );
+          let bridge: ActivityItem["bridge"] = "pending";
+          if (s.status === "DONE") bridge = s.substatus === "REFUNDED" ? "refunded" : s.substatus === "PARTIAL" ? "partial" : "done";
+          else if (s.status === "FAILED") bridge = "failed";
+          else if (Date.now() - b.createdAt > BRIDGE_GIVE_UP_MS) bridge = "unknown"; // NOT_FOUND/PENDING for too long: never resubmit, reconcile on the explorer
+          if (bridge === "pending") continue;
+          setItems((list) => list.map((i) => (i.hash === b.hash ? { ...i, bridge, receivedAmount: s.receiving?.amount ?? undefined } : i)));
+          refreshBalances();
+        } catch {
+          // Status service unreachable; try again later.
+        }
+      }
+    };
+    void tick();
+    const t = setInterval(() => void tick(), BRIDGE_POLL_MS);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bridgingKey, api.status]);
+
   const add = useCallback<ActivityApi["add"]>((item) => {
     setItems((list) => [{ ...item, createdAt: Date.now(), status: "pending" }, ...list.filter((i) => i.hash !== item.hash)]);
   }, []);
 
   const value = useMemo<ActivityApi>(
-    () => ({ items, add, knownRecipients: new Set(items.map((i) => (i.to.startsWith("0x") ? i.to.toLowerCase() : i.to))), get: (hash) => items.find((i) => i.hash === hash) }),
+    () => ({ items, add, knownRecipients: new Set(items.filter((i) => i.kind === "send").map((i) => (i.to.startsWith("0x") ? i.to.toLowerCase() : i.to))), get: (hash) => items.find((i) => i.hash === hash) }),
     [items, add],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

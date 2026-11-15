@@ -23,6 +23,7 @@ import { error, ip, json, parseBody } from "./http";
 import { personInclude, personView } from "./views";
 import { ALLOWED_PRICE_IDS, getPrices } from "./prices";
 import { getNfts, getTransfers, IndexerNotConfigured, INDEXED_NETWORKS } from "./indexer";
+import { getQuote, getStatus, SwapError } from "./swap";
 
 type Params = Record<string, string>;
 export type Handler = (req: NextRequest, params: Params) => Promise<Response>;
@@ -465,3 +466,34 @@ const indexed = (load: (address: string, chainId: number) => Promise<unknown>): 
 
 export const walletTransfers = indexed(async (a, c) => ({ transfers: await getTransfers(a, c) }));
 export const walletNfts = indexed((a, c) => getNfts(a, c));
+
+const swapGuard = (fn: (req: Parameters<Handler>[0], address: string) => Promise<unknown>): Handler => (req) =>
+  authed(req, async (u) => {
+    const lim = await limited(`v1swap:${u.userId}`, 40, 60_000);
+    if (lim) return lim;
+    try {
+      return json(await fn(req, u.address));
+    } catch (e) {
+      if (e instanceof SwapError) return error(e.status, e.code, e.message);
+      throw e;
+    }
+  });
+
+/** Swap or bridge quote for the signed-in user's own address (LI.FI, safety-checked). */
+export const swapQuote = swapGuard((req, address) => {
+  const q = req.nextUrl.searchParams;
+  return getQuote(address, {
+    fromChain: Number(q.get("fromChain")),
+    toChain: Number(q.get("toChain")),
+    fromToken: q.get("fromToken") ?? "",
+    toToken: q.get("toToken") ?? "",
+    fromAmount: q.get("fromAmount") ?? "",
+    slippage: Number(q.get("slippage") ?? "0.005"),
+  });
+});
+
+/** Progress of a cross-chain transfer. */
+export const swapStatus = swapGuard((req) => {
+  const q = req.nextUrl.searchParams;
+  return getStatus(q.get("txHash") ?? "", Number(q.get("fromChain")), Number(q.get("toChain")), q.get("bridge") ?? "");
+});

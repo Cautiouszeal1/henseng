@@ -12,6 +12,8 @@
 >
 > **Phase 3b:** Solana (SOL and USDC, same recovery phrase, Phantom-compatible), adding your own tokens, NFTs, and full incoming/outgoing history via the server's indexer. See `docs/super-app-phase-3b.md`.
 >
+> **Phase 4:** Swap and Bridge across Ethereum, Base and Arbitrum with real LI.FI quotes, every fee shown, exact-amount approvals, safety checks on every quote, and cross-chain tracking until funds arrive. See `docs/super-app-phase-4.md`.
+>
 > Run the app with `pnpm app` (Expo). Set `EXPO_PUBLIC_API_URL` in `apps/app/.env.local` to connect it to the API in `apps/web`.
 
 ## Backend: swap and bridge aggregator (`apps/web`)
@@ -61,6 +63,8 @@ On Windows PowerShell, use `Copy-Item .env apps/web/.env.local` and so on in pla
 | `ADMIN_BOOTSTRAP_ADDRESSES` | first run | Comma-separated wallets that become Super Admin on first sign-in |
 | `RPC_URL_<chainId>` | optional | Server-side RPC (Alchemy/QuickNode). Public RPCs are used if empty. |
 | `ALCHEMY_API_KEY` | optional | Wallet history and NFTs (server-side). Without it the app says they aren't set up. |
+| `LIFI_API_KEY` | optional | Swap/bridge quotes (LI.FI). Works without; a key raises rate limits. |
+| `LIFI_INTEGRATOR`, `SWAP_FEE` | optional | Your own fee on swaps (e.g. `0.0025` = 0.25%), shown to users in every quote. |
 | `COINGECKO_API_KEY` | optional | Free CoinGecko demo key for wallet USD prices. Works without one, at lower rate limits. |
 
 ### Becoming the first admin

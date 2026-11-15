@@ -111,6 +111,21 @@ if (process.env.FAKE_ALCHEMY) {
   check("indexer: unsupported network refused", (await call("GET", "/wallet/nfts?chainId=56", tc)).status === 400);
   check("indexer: needs sign-in", (await call("GET", "/wallet/nfts?chainId=8453")).status === 401);
 }
+if (process.env.FAKE_LIFI) {
+  const qs = (o) => "/swap/quote?" + new URLSearchParams({ fromChain: "8453", toChain: "8453", fromToken: "native", toToken: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", fromAmount: "10000000000000000", slippage: "0.005", ...o });
+  const good = await call("GET", qs({}), tc);
+  check("swap: quote returned and safety-checked", good.status === 200 && good.data.tx.to === "0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE" && BigInt(good.data.toAmountMin) > 0n && good.data.toolName === "Uniswap V3");
+  check("swap: needs sign-in", (await call("GET", qs({}))).status === 401);
+  const unsafe = await call("GET", qs({ fromToken: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", toToken: "native", fromAmount: "13370000" }), tc);
+  check("swap: quote to an unknown contract refused", unsafe.status === 502 && unsafe.data.error.code === "UNSAFE_QUOTE");
+  check("swap: unverified token refused", (await call("GET", qs({ toToken: "0x000000000000000000000000000000000000E57A" }), tc)).status === 400);
+  check("swap: testnets refused", (await call("GET", qs({ fromChain: "11155111", toChain: "11155111" }), tc)).status === 400);
+  check("swap: same token refused", (await call("GET", qs({ toToken: "native" }), tc)).status === 400);
+  check("swap: bad slippage refused", (await call("GET", qs({ slippage: "0.5" }), tc)).status === 400);
+  const noRoute = await call("GET", qs({ fromChain: "1", toChain: "1", toToken: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48" }), tc);
+  check("swap: no route explained", noRoute.status === 422 && noRoute.data.error.code === "NO_ROUTE");
+  check("swap status: invalid hash refused", (await call("GET", "/swap/status?txHash=0x12&fromChain=8453&toChain=42161&bridge=across", tc)).status === 400);
+}
 check("logout revokes token", (await call("POST", "/auth/logout", tc)).status === 200 && (await call("GET", "/me", tc)).status === 401);
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail) process.exit(1);
