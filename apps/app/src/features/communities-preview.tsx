@@ -102,7 +102,7 @@ export function CommunitiesPreview() {
       }
     >
       <View style={{ gap: 28 }}>
-        <PreviewBanner text="Preview: sample communities. Creating and joining real communities arrives in Phase 2." />
+        <PreviewBanner text="Preview: sample communities. This build isn't connected to the HENSENG server, so creating and joining are off." />
         {searching ? (
           <View style={{ gap: 8 }}>
             <SearchField value={query} onChangeText={setQuery} placeholder="Search communities" />
@@ -147,7 +147,7 @@ export function CommunitiesPreview() {
       <Sheet visible={creating} onClose={() => setCreating(false)} title="Create a community">
         <EmptyState
           icon={Users}
-          title="Community creation opens in Phase 2"
+          title="Creating communities needs the HENSENG server"
           body="You'll be able to create public or private communities with channels, roles, announcements and moderation tools."
         />
         <Button label="Got it" kind="secondary" onPress={() => setCreating(false)} />

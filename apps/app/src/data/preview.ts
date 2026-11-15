@@ -1,6 +1,6 @@
 /**
- * PREVIEW DATA — sample conversations and communities shown until XMTP
- * messaging and the communities API ship in Phase 2. Every screen that uses
+ * PREVIEW DATA — sample conversations and communities shown in builds where XMTP
+ * messaging or the HENSENG API isn't configured. Every screen that uses
  * this file shows a "Preview" banner. None of these people or messages exist.
  */
 

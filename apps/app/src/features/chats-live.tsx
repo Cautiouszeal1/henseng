@@ -199,13 +199,20 @@ export function ChatsLive() {
     if (!client) return;
     try {
       const [inbox, reqs] = await Promise.all([client.listChats("inbox"), client.listChats("requests")]);
-      setChats(inbox);
-      setRequests(reqs);
+      if (profile.allowMessagesFrom === "everyone") {
+        // "Who can message me: Everyone" — new conversations go straight to the inbox (Accept/Block still shows inside).
+        const at = (c: ChatSummary) => (c.lastMessage?.sentAt ?? c.createdAt).getTime();
+        setChats([...inbox, ...reqs].sort((a, b) => at(b) - at(a)));
+        setRequests([]);
+      } else {
+        setChats(inbox);
+        setRequests(reqs);
+      }
       setLoadError(null);
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : "Couldn't load your chats.");
     }
-  }, [client]);
+  }, [client, profile.allowMessagesFrom]);
 
   useEffect(() => {
     void load();

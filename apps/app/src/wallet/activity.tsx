@@ -10,7 +10,7 @@ import { useWallet } from "./wallet-context";
 /**
  * Transactions sent from HENSENG on this device, with live status.
  * Stored locally per wallet (public data only: hashes, amounts, addresses).
- * Incoming transfers and activity from other apps need an indexer (later phase).
+ * Incoming transfers and activity from other apps come from the API's indexer (see use-indexer.ts).
  */
 export interface ActivityItem {
   /** EVM transaction hash, or Solana signature */

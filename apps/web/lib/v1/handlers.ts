@@ -497,3 +497,46 @@ export const swapStatus = swapGuard((req) => {
   const q = req.nextUrl.searchParams;
   return getStatus(q.get("txHash") ?? "", Number(q.get("fromChain")), Number(q.get("toChain")), q.get("bridge") ?? "");
 });
+
+const deleteBody = z.object({ confirm: z.literal("DELETE") });
+const ROLE_ORDER = ["ADMIN", "MODERATOR", "MEMBER"] as const;
+
+/**
+ * Deletes the signed-in account and everything HENSENG stores about it (required by the App
+ * Store and Play Store). Communities the user owns pass to their most senior remaining member,
+ * or are deleted if no one else is in them. The wallet itself is untouched: it lives on the
+ * user's device and on the blockchain, which HENSENG can't (and shouldn't) change.
+ */
+export const deleteAccount: Handler = (req) =>
+  authed(req, async (u) => {
+    const lim = await limited(`v1delete:${u.userId}`, 3, 60_000);
+    if (lim) return lim;
+    const body = await parseBody(req, deleteBody);
+    if ("response" in body) return body.response;
+    if (await db().adminUser.findUnique({ where: { userId: u.userId } })) {
+      return error(409, "ADMIN_ACCOUNT", "Admin accounts can't be deleted from the app. Remove admin access first.");
+    }
+    const summary = await db().$transaction(async (tx) => {
+      let transferred = 0;
+      let deleted = 0;
+      for (const c of await tx.community.findMany({ where: { ownerId: u.userId }, select: { id: true } })) {
+        const others = await tx.communityMember.findMany({ where: { communityId: c.id, userId: { not: u.userId } }, orderBy: { joinedAt: "asc" } });
+        const heir = ROLE_ORDER.map((r) => others.find((m) => m.role === r)).find(Boolean);
+        if (heir) {
+          await tx.community.update({ where: { id: c.id }, data: { ownerId: heir.userId } });
+          await tx.communityMember.update({ where: { communityId_userId: { communityId: c.id, userId: heir.userId } }, data: { role: "OWNER" } });
+          transferred++;
+        } else {
+          await tx.community.delete({ where: { id: c.id } });
+          deleted++;
+        }
+      }
+      const messages = await tx.channelMessage.deleteMany({ where: { authorId: u.userId } });
+      await tx.communityInvite.deleteMany({ where: { createdById: u.userId } });
+      await tx.communityBan.deleteMany({ where: { userId: u.userId } });
+      // Profile, wallet link, sessions, devices, memberships, notifications and own reports cascade.
+      await tx.user.delete({ where: { id: u.userId } });
+      return { communitiesTransferred: transferred, communitiesDeleted: deleted, messagesDeleted: messages.count };
+    });
+    return json({ deleted: true, ...summary });
+  });

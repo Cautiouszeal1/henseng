@@ -110,7 +110,7 @@ export function ChatsPreview() {
         contentContainerStyle={{ paddingHorizontal: 4, paddingTop: 8, paddingBottom: 100 }}
         ListHeaderComponent={
           <View style={{ gap: 14, paddingHorizontal: 12, paddingBottom: 6 }}>
-            <PreviewBanner text="Preview: these are sample conversations. Encrypted chats with real contacts arrive in Phase 2." />
+            <PreviewBanner text="Preview: these are sample conversations. Encrypted messaging is off in this build." />
             {filter === "all" && !query ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 14, paddingVertical: 4 }}>
                 {PREVIEW_CHATS.filter((c) => !c.group).map((c) => (
@@ -149,8 +149,8 @@ export function ChatsPreview() {
       <Sheet visible={newChat} onClose={() => setNewChat(false)} title="New chat">
         <EmptyState
           icon={MessageCirclePlus}
-          title="Start encrypted chats in Phase 2"
-          body="You'll be able to message any wallet address, ENS name or HENSENG username with end-to-end encryption (XMTP)."
+          title="Encrypted chats are off in this build"
+          body="Builds with encrypted messaging switched on let you message any wallet address, ENS name or HENSENG username, end-to-end encrypted (XMTP)."
         />
         <Button label="Got it" kind="secondary" onPress={() => setNewChat(false)} />
       </Sheet>

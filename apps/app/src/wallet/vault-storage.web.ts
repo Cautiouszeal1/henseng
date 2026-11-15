@@ -3,8 +3,8 @@ import { isEncryptedVault, type EncryptedVault } from "@henseng/wallet";
 /**
  * Web and Chrome extension: the vault is already encrypted with the user's
  * password (scrypt + AES-256-GCM), so it is stored as ciphertext in browser
- * storage on this device only. The extension build (Phase 5) moves this into
- * chrome.storage.local, owned by the background service worker.
+ * storage on this device only. In the Chrome extension this storage belongs to
+ * the extension's own origin, which websites and other extensions can't read.
  */
 const KEY = "henseng.vault.v1";
 

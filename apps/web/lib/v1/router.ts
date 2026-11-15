@@ -14,6 +14,7 @@ const ROUTES: [Method, string, h.Handler][] = [
   ["PATCH", "me/profile", h.patchProfile],
   ["GET", "me/devices", h.listDevices],
   ["DELETE", "me/devices/:id", h.revokeDevice],
+  ["DELETE", "me", h.deleteAccount],
   ["POST", "profiles/lookup", h.lookupProfiles],
   ["GET", "profiles/:username", h.getProfile],
   ["GET", "communities", h.listCommunities],

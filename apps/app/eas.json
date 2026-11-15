@@ -1,19 +1,36 @@
 {
-  "cli": { "version": ">= 16.0.0", "appVersionSource": "remote" },
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
   "build": {
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "env": { "EXPO_PUBLIC_XMTP_ENV": "dev" }
+      "env": {
+        "EXPO_PUBLIC_XMTP_ENV": "dev"
+      }
     },
     "preview": {
       "distribution": "internal",
-      "env": { "EXPO_PUBLIC_XMTP_ENV": "dev" }
+      "env": {
+        "EXPO_PUBLIC_XMTP_ENV": "dev"
+      }
     },
     "production": {
       "autoIncrement": true,
-      "env": { "EXPO_PUBLIC_XMTP_ENV": "production" }
+      "env": {
+        "EXPO_PUBLIC_XMTP_ENV": "production"
+      }
     }
   },
-  "submit": { "production": {} }
+  "submit": {
+    "production": {
+      "android": {
+        "track": "internal",
+        "releaseStatus": "draft"
+      },
+      "ios": {}
+    }
+  }
 }

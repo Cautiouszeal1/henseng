@@ -156,7 +156,7 @@ export default function Explore() {
           <ShieldCheck size={18} color={theme.positive} />
           <Text variant="caption" tone="secondary" style={{ flex: 1 }}>
             dApps open in a secure in-app browser and only over HTTPS. Listing an app here is not an endorsement. Connecting your HENSENG
-            wallet to dApps arrives in Phase 5.
+            wallet to dApps is coming in a later update.
           </Text>
         </View>
       </View>

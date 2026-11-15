@@ -40,7 +40,7 @@ export function CommunityPreview() {
           <View style={{ position: "absolute", right: -40, top: 20, width: 220, height: 220, borderRadius: 110, backgroundColor: "rgba(255,255,255,0.07)" }} />
           <View style={{ flexDirection: "row", justifyContent: "space-between", paddingTop: insets.top + 10, paddingHorizontal: 14 }}>
             <IconButton icon={ArrowLeft} label="Back" onPress={() => (router.canGoBack() ? router.back() : router.replace("/communities"))} />
-            <IconButton icon={Share2} label="Share community" onPress={() => toast("Invite links arrive in Phase 2.")} />
+            <IconButton icon={Share2} label="Share community" onPress={() => toast("Invite links need the HENSENG server, which this build isn't connected to.")} />
           </View>
         </LinearGradient>
 
@@ -95,7 +95,7 @@ export function CommunityPreview() {
                 <Tap
                   key={ch.name}
                   haptic={false}
-                  onPress={() => toast(ch.locked ? "This channel is for members with a role." : "Channel conversations arrive in Phase 2.")}
+                  onPress={() => toast(ch.locked ? "This channel is for members with a role." : "Channel conversations need the HENSENG server, which this build isn't connected to.")}
                   accessibilityRole="button"
                   accessibilityLabel={`${ch.name} channel${ch.unread ? `, ${ch.unread} unread` : ""}`}
                   style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 14, borderTopWidth: i ? 1 : 0, borderTopColor: theme.border }}

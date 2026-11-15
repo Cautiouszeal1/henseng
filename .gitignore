@@ -16,3 +16,7 @@ apps/app/ios
 apps/app/android
 apps/app/expo-env.d.ts
 apps/app/extension-build
+
+# Chrome extension build output
+apps/app/dist-extension/
+apps/app/dist-extension.zip

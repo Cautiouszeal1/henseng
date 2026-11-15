@@ -2,8 +2,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 /**
- * The user's public identity. Phase 1 keeps it on this device; Phase 2 syncs
- * it to the HENSENG API (username uniqueness is enforced there).
+ * The user's public identity. Kept on this device, and synced to the HENSENG API
+ * when the app is connected (username uniqueness is enforced there).
  */
 export interface Profile {
   displayName: string;

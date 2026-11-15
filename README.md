@@ -14,6 +14,8 @@
 >
 > **Phase 4:** Swap and Bridge across Ethereum, Base and Arbitrum with real LI.FI quotes, every fee shown, exact-amount approvals, safety checks on every quote, and cross-chain tracking until funds arrive. See `docs/super-app-phase-4.md`.
 >
+> **Phase 5:** Chrome extension (side panel, `pnpm --filter @henseng/app build:extension`), App Store and Play Store readiness (privacy manifest, permissions, no backups), in-app account deletion, and a privacy policy page. Store checklist: `docs/release-guide.md`.
+>
 > Run the app with `pnpm app` (Expo). Set `EXPO_PUBLIC_API_URL` in `apps/app/.env.local` to connect it to the API in `apps/web`.
 
 ## Backend: swap and bridge aggregator (`apps/web`)

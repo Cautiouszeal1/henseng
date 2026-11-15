@@ -15,6 +15,7 @@ import {
   Smartphone,
   Sun,
   Trash2,
+  UserX,
   Wallet,
   Eye,
   MessageSquareLock,
@@ -26,6 +27,7 @@ import {
 import { useState, type ReactNode } from "react";
 import { Platform, Switch, View } from "react-native";
 import { useApi, useApiQuery } from "../../api/api-context";
+import { clearToken } from "../../api/token-storage";
 import type { CommunityCard, Device } from "../../api/types";
 import { PREVIEW_COMMUNITIES } from "../../data/preview";
 import { router as nav } from "expo-router";
@@ -78,9 +80,10 @@ export default function ProfileScreen() {
   const { theme, preference, setPreference } = useTheme();
   const { isDesktop } = useLayout();
   const { profile, update, clear } = useProfile();
-  const { address, lock, revealPhrase, removeWallet } = useWallet();
+  const { address, lock, revealPhrase, removeWallet, verifyPassword } = useWallet();
   const toast = useToast();
-  const [sheet, setSheet] = useState<null | "reveal" | "remove">(null);
+  const [sheet, setSheet] = useState<null | "reveal" | "remove" | "deleteAccount">(null);
+  const [confirmText, setConfirmText] = useState("");
   const [password, setPassword] = useState("");
   const [phrase, setPhrase] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -173,12 +176,12 @@ export default function ProfileScreen() {
           <Row
             icon={MessageSquareLock}
             label="Who can message me"
-            value={profile.allowMessagesFrom === "contacts" ? "Only my contacts (message requests from others)" : "Everyone"}
+            value={profile.allowMessagesFrom === "contacts" ? "People I've accepted (others go to Requests)" : "Everyone (straight to my inbox)"}
             onPress={() => void update({ allowMessagesFrom: profile.allowMessagesFrom === "contacts" ? "everyone" : "contacts" })}
           />
         </Group>
         <Text variant="caption" tone="tertiary" style={{ marginTop: 8 }}>
-          {live ? "Online status syncs to your HENSENG profile. Read receipts and message requests apply when private chats launch." : "Privacy settings are saved on this device."}
+          {live ? "Online status syncs to your HENSENG profile. Read receipts and who can message you apply to your encrypted chats." : "Privacy settings are saved on this device."}
         </Text>
       </View>
 
@@ -237,6 +240,9 @@ export default function ProfileScreen() {
         <SectionHeader title="Danger zone" />
         <Group>
           <Row icon={Trash2} label="Remove wallet from this device" value="You'll need your recovery phrase to restore it" onPress={() => setSheet("remove")} danger />
+          {live ? (
+            <Row icon={UserX} label="Delete HENSENG account" value="Erases your profile, communities and messages from HENSENG" onPress={() => { setConfirmText(""); setSheet("deleteAccount"); }} danger />
+          ) : null}
         </Group>
       </View>
     </View>
@@ -306,6 +312,43 @@ export default function ProfileScreen() {
             />
           </>
         )}
+      </Sheet>
+
+      <Sheet visible={sheet === "deleteAccount"} onClose={closeSheet} title="Delete your HENSENG account?">
+        <Text tone="secondary">
+          This permanently erases what HENSENG stores about you: your profile and username, your community memberships and messages, notifications and
+          signed-in devices. Communities you own pass to their most senior member, or are deleted if you're the only one in them.
+        </Text>
+        <Text tone="secondary">
+          Your wallet and funds are not affected: they're on this device and the blockchain, not on HENSENG. Encrypted private chats live on the XMTP
+          network and stay there. If you unlock HENSENG again later, a new, empty account is created for your wallet.
+        </Text>
+        <Field label="Password" value={password} onChangeText={(v) => { setPassword(v); setError(null); }} secureTextEntry autoCapitalize="none" error={error} />
+        <Field label='Type "DELETE" to confirm' value={confirmText} onChangeText={setConfirmText} autoCapitalize="characters" autoCorrect={false} />
+        <Button
+          label="Delete account"
+          kind="danger"
+          loading={busy}
+          disabled={!password || confirmText.trim() !== "DELETE"}
+          onPress={async () => {
+            setBusy(true);
+            setError(null);
+            try {
+              if (!(await verifyPassword(password))) return setError("That password is not correct.");
+              await api.request("DELETE", "/me", { confirm: "DELETE" });
+              await clearToken();
+              await clear();
+              closeSheet();
+              toast("Your HENSENG account was deleted", "success");
+              lock();
+            } catch {
+              setError("Couldn't delete your account right now. Check your connection and try again.");
+            } finally {
+              setBusy(false);
+            }
+          }}
+        />
+        <Button label="Cancel" kind="secondary" onPress={closeSheet} />
       </Sheet>
 
       <Sheet visible={sheet === "remove"} onClose={closeSheet} title="Remove wallet?">

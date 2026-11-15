@@ -126,6 +126,26 @@ if (process.env.FAKE_LIFI) {
   check("swap: no route explained", noRoute.status === 422 && noRoute.data.error.code === "NO_ROUTE");
   check("swap status: invalid hash refused", (await call("GET", "/swap/status?txHash=0x12&fromChain=8453&toChain=42161&bridge=across", tc)).status === 400);
 }
+{
+  // Account deletion (App Store / Play Store requirement)
+  const D = privateKeyToAccount(generatePrivateKey());
+  const td = (await login(D, "ios")).data.token;
+  await call("PATCH", "/me/profile", td, { username: "leaving_user", displayName: "Leaving" });
+  const solo = (await call("POST", "/communities", td, { name: "Solo Club" })).data.slug;
+  const shared = (await call("POST", "/communities", td, { name: "Shared Club" })).data.slug;
+  await call("POST", `/communities/${shared}/join`, tc, {});
+  const sharedGen = (await call("GET", `/communities/${shared}`, td)).data.channels.find((c) => c.name === "general");
+  await call("POST", `/communities/${shared}/channels/${sharedGen.id}/messages`, td, { body: "bye soon" });
+  check("delete account needs explicit confirmation", (await call("DELETE", "/me", td, {})).status === 400);
+  const del = await call("DELETE", "/me", td, { confirm: "DELETE" });
+  check("delete account: removes data, hands over shared communities", del.status === 200 && del.data.communitiesTransferred === 1 && del.data.communitiesDeleted === 1 && del.data.messagesDeleted === 1, JSON.stringify(del.data));
+  check("deleted account's token stops working", (await call("GET", "/me", td)).status === 401);
+  check("deleted profile is gone", (await call("GET", "/profiles/leaving_user")).status === 404);
+  check("solo community deleted", (await call("GET", `/communities/${solo}`)).status === 404);
+  const sh = (await call("GET", `/communities/${shared}`, tc)).data;
+  check("shared community now owned by the remaining member", sh.role === "OWNER");
+  check("deleted user's messages removed", (await call("GET", `/communities/${shared}/channels/${sharedGen.id}/messages`)).data.messages.length === 0);
+}
 check("logout revokes token", (await call("POST", "/auth/logout", tc)).status === 200 && (await call("GET", "/me", tc)).status === 401);
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail) process.exit(1);

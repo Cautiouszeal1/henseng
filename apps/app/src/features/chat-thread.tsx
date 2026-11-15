@@ -140,9 +140,9 @@ function Bubble({ m, onReply, onReact }: { m: PreviewMessage; onReply: () => voi
 }
 
 /**
- * Conversation view. In this phase it renders PREVIEW messages and keeps any
- * messages you type in memory only — they are not sent anywhere. Phase 2
- * replaces the data source with XMTP (end-to-end encrypted).
+ * Preview conversation view, used when encrypted messaging is off in a build.
+ * It renders PREVIEW messages and keeps anything you type in memory only — nothing
+ * is sent. Live chats use chat-thread-live.tsx (XMTP, end-to-end encrypted).
  */
 export function ChatThread({ chat, embedded = false }: { chat: PreviewChat; embedded?: boolean }) {
   const { theme } = useTheme();
@@ -167,7 +167,7 @@ export function ChatThread({ chat, embedded = false }: { chat: PreviewChat; embe
     setTimeout(() => list.current?.scrollToEnd({ animated: true }), 50);
   };
 
-  const soon = (what: string) => toast(`${what} arrives with encrypted messaging in Phase 2.`, "info");
+  const soon = (what: string) => toast(`${what} needs encrypted messaging, which is off in this build.`, "info");
 
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: theme.bg }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
@@ -192,7 +192,7 @@ export function ChatThread({ chat, embedded = false }: { chat: PreviewChat; embe
         contentContainerStyle={{ paddingVertical: 12, gap: 2 }}
         ListHeaderComponent={
           <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>
-            <PreviewBanner text="Preview conversation. Messages you type stay on this screen only and are not sent. Encrypted messaging arrives in Phase 2." />
+            <PreviewBanner text="Preview conversation. Messages you type stay on this screen only and are not sent. Encrypted messaging is off in this build." />
           </View>
         }
         renderItem={({ item }) => (

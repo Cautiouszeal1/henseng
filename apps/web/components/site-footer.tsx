@@ -17,6 +17,7 @@ const groups = [
       { href: "/analytics", label: "Public analytics" },
       { href: "/docs/fees", label: "Fees" },
       { href: "/docs/security", label: "Security" },
+      { href: "/privacy", label: "Privacy policy" },
     ],
   },
   {
