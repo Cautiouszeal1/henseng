@@ -22,6 +22,7 @@ import { APP_TOKEN_TTL_DAYS, newToken, requireAppUser, optionalAppUser, type App
 import { error, ip, json, parseBody } from "./http";
 import { personInclude, personView } from "./views";
 import { ALLOWED_PRICE_IDS, getPrices } from "./prices";
+import { getNfts, getTransfers, IndexerNotConfigured, INDEXED_NETWORKS } from "./indexer";
 
 type Params = Record<string, string>;
 export type Handler = (req: NextRequest, params: Params) => Promise<Response>;
@@ -438,7 +439,29 @@ export const listPrices: Handler = async (req) => {
   if (lim) return lim;
   const ids = [...new Set((req.nextUrl.searchParams.get("ids") ?? "").split(",").map((s) => s.trim()).filter(Boolean))];
   if (!ids.length || ids.length > 50) return error(400, "BAD_REQUEST", "Pass 1 to 50 comma-separated price ids.");
+  // Unknown ids are reported as missing rather than failing the request, so an app that
+  // knows newer tokens still gets prices from an older server (and vice versa).
+  const known = ids.filter((id) => ALLOWED_PRICE_IDS.has(id));
   const unknown = ids.filter((id) => !ALLOWED_PRICE_IDS.has(id));
-  if (unknown.length) return error(400, "BAD_REQUEST", `Unknown price id: ${unknown.join(", ")}`);
-  return json({ ...(await getPrices(ids)), currency: "usd", source: "CoinGecko" });
+  if (!known.length) return error(400, "BAD_REQUEST", `Unknown price id: ${unknown.join(", ")}`);
+  const r = await getPrices(known);
+  return json({ prices: r.prices, missing: [...r.missing, ...unknown], currency: "usd", source: "CoinGecko" });
 };
+
+/** Shared wrapper for indexer-backed endpoints: the signed-in user's own address, one network. */
+const indexed = (load: (address: string, chainId: number) => Promise<unknown>): Handler => (req) =>
+  authed(req, async (u) => {
+    const lim = await limited(`v1idx:${u.userId}`, 60, 60_000);
+    if (lim) return lim;
+    const chainId = Number(req.nextUrl.searchParams.get("chainId"));
+    if (!INDEXED_NETWORKS[chainId]) return error(400, "BAD_REQUEST", "Unsupported network.");
+    try {
+      return json(await load(u.address, chainId));
+    } catch (e) {
+      if (e instanceof IndexerNotConfigured) return error(503, "NOT_CONFIGURED", e.message);
+      return error(502, "UPSTREAM", "Couldn't load this from the network right now. Try again shortly.");
+    }
+  });
+
+export const walletTransfers = indexed(async (a, c) => ({ transfers: await getTransfers(a, c) }));
+export const walletNfts = indexed((a, c) => getNfts(a, c));

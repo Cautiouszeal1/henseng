@@ -3,22 +3,23 @@ import * as Clipboard from "expo-clipboard";
 import { LinearGradient } from "expo-linear-gradient";
 import * as WebBrowser from "expo-web-browser";
 import { router } from "expo-router";
-import { ArrowDownToLine, ArrowLeftRight, ArrowUpRight, Bell, Copy, ExternalLink, Eye, EyeOff, History, Lock, RefreshCw, Repeat, ScanLine } from "lucide-react-native";
+import { ArrowDownToLine, ArrowLeftRight, ArrowUpRight, Bell, Copy, ExternalLink, Eye, EyeOff, Lock, Plus, RefreshCw, Repeat, ScanLine, Trash2 } from "lucide-react-native";
 import { useState } from "react";
 import { Switch, View } from "react-native";
 import QRCode from "react-native-qrcode-svg";
+import { WalletActivity } from "../../features/wallet-activity";
+import { WalletNfts } from "../../features/wallet-nfts";
 import { Sheet, useToast } from "../../ui/overlays";
-import { Button, Card, EmptyState, IconButton, Pill, SectionHeader, Skeleton, Tap, Text } from "../../ui/primitives";
+import { Button, Card, EmptyState, Field, IconButton, Pill, Skeleton, Tap, Text } from "../../ui/primitives";
 import { Screen } from "../../ui/screen";
 import { useLayout, useTheme } from "../../ui/theme";
 import { radius } from "../../ui/tokens";
-import { useActivity } from "../../wallet/activity";
-import { explorerAddress, explorerTx, networkFor } from "../../wallet/networks";
+import { explorerAddress, NETWORKS } from "../../wallet/networks";
 import { TokenIcon } from "../../wallet/token-icon";
-import { formatUsd, usePortfolio } from "../../wallet/use-portfolio";
+import { formatUsd, usePortfolio, type Holding } from "../../wallet/use-portfolio";
 import { useWallet } from "../../wallet/wallet-context";
 
-type Action = "receive" | "swap" | "bridge" | null;
+type SheetName = "receive" | "send" | "swap" | "bridge" | "add" | null;
 
 function ActionButton({ icon: Icon, label, onPress }: { icon: typeof ArrowUpRight; label: string; onPress: () => void }) {
   const { theme } = useTheme();
@@ -32,29 +33,59 @@ function ActionButton({ icon: Icon, label, onPress }: { icon: typeof ArrowUpRigh
   );
 }
 
-function timeAgo(ms: number) {
-  const s = Math.round((Date.now() - ms) / 1000);
-  if (s < 60) return "Just now";
-  if (s < 3600) return `${Math.floor(s / 60)} min ago`;
-  if (s < 86400) return `${Math.floor(s / 3600)} h ago`;
-  return new Date(ms).toLocaleDateString([], { month: "short", day: "numeric" });
+function Segmented<T extends string>({ value, options, onChange }: { value: T; options: [T, string][]; onChange: (v: T) => void }) {
+  const { theme } = useTheme();
+  return (
+    <View accessibilityRole="tablist" style={{ flexDirection: "row", gap: 4, padding: 4, borderRadius: radius.md, backgroundColor: theme.surface, alignSelf: "flex-start" }}>
+      {options.map(([v, label]) => (
+        <Tap key={v} onPress={() => onChange(v)} accessibilityRole="tab" accessibilityState={{ selected: value === v }} style={{ paddingHorizontal: 16, paddingVertical: 8, borderRadius: radius.sm, backgroundColor: value === v ? theme.card : "transparent" }}>
+          <Text variant="bodyStrong" style={{ color: value === v ? theme.text : theme.textSecondary, fontSize: 14 }}>{label}</Text>
+        </Tap>
+      ))}
+    </View>
+  );
 }
+
+const openSend = (h?: Pick<Holding, "token" | "network">) =>
+  h?.network.kind === "solana"
+    ? router.push({ pathname: "/send-solana", params: { chainId: String(h.token.chainId), token: h.token.address ?? "native" } })
+    : router.push(h ? { pathname: "/send", params: { chainId: String(h.token.chainId), token: h.token.address ?? "native" } } : "/send");
 
 export default function WalletScreen() {
   const { theme } = useTheme();
   const { isDesktop } = useLayout();
-  const { address, lock } = useWallet();
+  const { address, solanaAddress, lock } = useWallet();
   const toast = useToast();
   const p = usePortfolio();
-  const { items } = useActivity();
   const [hidden, setHidden] = useState(false);
-  const [action, setAction] = useState<Action>(null);
+  const [sheet, setSheet] = useState<SheetName>(null);
+  const [view, setView] = useState<"tokens" | "nfts">("tokens");
+  const [receiveOn, setReceiveOn] = useState<"evm" | "solana">("evm");
+  const [addNet, setAddNet] = useState(8453);
+  const [addInput, setAddInput] = useState("");
+  const [addError, setAddError] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
   const mask = (s: string) => (hidden ? "••••••" : s);
 
-  const copy = async () => {
-    if (!address) return;
-    await Clipboard.setStringAsync(address);
+  const copy = async (value: string | null) => {
+    if (!value) return;
+    await Clipboard.setStringAsync(value);
     toast("Address copied", "success");
+  };
+
+  const firstSolana = p.holdings.find((h) => h.network.kind === "solana" && h.balance > 0n);
+  const hasEvmFunds = p.holdings.some((h) => h.network.kind === "evm" && h.balance > 0n);
+  const onSend = () => (firstSolana && hasEvmFunds ? setSheet("send") : firstSolana ? openSend(firstSolana) : openSend());
+
+  const addToken = async () => {
+    setAdding(true);
+    setAddError(null);
+    const r = await p.addCustomToken(addNet, addInput);
+    setAdding(false);
+    if ("error" in r) return setAddError(r.error);
+    toast(`${r.token.symbol} added`, "success");
+    setAddInput("");
+    setSheet(null);
   };
 
   const firstLoad = p.loading && !p.updatedAt;
@@ -65,8 +96,10 @@ export default function WalletScreen() {
     if (p.prices.status === "off") return "USD values need the HENSENG server, which this build isn't connected to.";
     if (p.prices.status === "error") return "Prices couldn't be loaded, so there's no USD total right now. Your balances below are live.";
     if (p.prices.status === "loading") return "Loading prices…";
-    if (p.failedNetworks.some((n) => !n.testnet)) return `${p.failedNetworks.filter((n) => !n.testnet).map((n) => n.name).join(" and ")} couldn't be reached, so this total is partial.`;
-    return "Ethereum, Base and Arbitrum. Testnet tokens have no value and aren't counted.";
+    const down = p.failedNetworks.filter((n) => !n.testnet);
+    const parts = [down.length ? `${down.map((n) => n.name).join(", ")} couldn't be reached, so this total is partial.` : "Ethereum, Base, Arbitrum and Solana. Testnet tokens aren't counted."];
+    if (p.hasCustomHoldings) parts.push("Tokens you added aren't counted.");
+    return parts.join(" ");
   })();
 
   const balanceCard = (
@@ -95,32 +128,33 @@ export default function WalletScreen() {
           </View>
         )}
         <Text variant="caption" style={{ color: "#B8B6C6" }}>{totalNote}</Text>
-        <Tap onPress={() => void copy()} accessibilityLabel={`Copy address ${address}`} style={{ flexDirection: "row", alignItems: "center", gap: 8, alignSelf: "flex-start", paddingHorizontal: 12, paddingVertical: 8, borderRadius: radius.full, backgroundColor: "rgba(255,255,255,0.1)" }}>
-          <Text variant="mono" style={{ color: "#FFFFFF" }}>{address ? shortAddress(address) : "—"}</Text>
-          <Copy size={14} color="#FFFFFF" />
-        </Tap>
+        <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
+          <Tap onPress={() => void copy(address)} accessibilityLabel={`Copy Ethereum address ${address}`} style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: radius.full, backgroundColor: "rgba(255,255,255,0.1)" }}>
+            <Text variant="mono" style={{ color: "#FFFFFF" }}>{address ? shortAddress(address) : "—"}</Text>
+            <Copy size={14} color="#FFFFFF" />
+          </Tap>
+          {solanaAddress ? (
+            <Tap onPress={() => void copy(solanaAddress)} accessibilityLabel={`Copy Solana address ${solanaAddress}`} style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: radius.full, backgroundColor: "rgba(255,255,255,0.1)" }}>
+              <Text variant="mono" style={{ color: "#FFFFFF" }}>◎ {solanaAddress.slice(0, 4)}…{solanaAddress.slice(-4)}</Text>
+              <Copy size={14} color="#FFFFFF" />
+            </Tap>
+          ) : null}
+        </View>
       </LinearGradient>
     </View>
   );
 
   const actions = (
     <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-      <ActionButton icon={ArrowDownToLine} label="Receive" onPress={() => setAction("receive")} />
-      <ActionButton icon={ArrowUpRight} label="Send" onPress={() => router.push("/send")} />
-      <ActionButton icon={Repeat} label="Swap" onPress={() => setAction("swap")} />
-      <ActionButton icon={ArrowLeftRight} label="Bridge" onPress={() => setAction("bridge")} />
+      <ActionButton icon={ArrowDownToLine} label="Receive" onPress={() => setSheet("receive")} />
+      <ActionButton icon={ArrowUpRight} label="Send" onPress={onSend} />
+      <ActionButton icon={Repeat} label="Swap" onPress={() => setSheet("swap")} />
+      <ActionButton icon={ArrowLeftRight} label="Bridge" onPress={() => setSheet("bridge")} />
     </View>
   );
 
-  const assets = (
+  const tokenRows = (
     <View>
-      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-        <Text variant="heading">Your assets</Text>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <Text variant="caption" tone="secondary">Testnets</Text>
-          <Switch value={p.includeTestnets} onValueChange={p.setIncludeTestnets} trackColor={{ true: theme.accent, false: theme.surface }} thumbColor="#FFFFFF" accessibilityLabel="Show testnets" />
-        </View>
-      </View>
       <Card padded={false}>
         {firstLoad
           ? [0, 1, 2].map((i) => (
@@ -133,75 +167,64 @@ export default function WalletScreen() {
           : p.holdings.map((h, i) => {
               const price = p.priceOf(h.token);
               return (
-                <Tap key={h.key} onPress={() => router.push({ pathname: "/send", params: { chainId: String(h.token.chainId), token: h.token.address ?? "native" } })} accessibilityRole="button" accessibilityLabel={`${h.token.name} on ${h.network.name}: ${formatTokenAmount(h.balance, h.token.decimals)} ${h.token.symbol}. Send`} haptic={false} style={{ flexDirection: "row", alignItems: "center", gap: 14, paddingHorizontal: 16, paddingVertical: 14, borderTopWidth: i ? 1 : 0, borderTopColor: theme.border }}>
-                  <TokenIcon symbol={h.token.symbol} network={h.network} />
-                  <View style={{ flex: 1 }}>
-                    <Text variant="subheading">{h.token.name}</Text>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                      <Text variant="caption" tone="secondary">{h.network.name}{price && !h.network.testnet ? ` · ${formatUsd(price.usd)}` : ""}</Text>
-                      {h.network.testnet ? <Pill label="Testnet" tone="warning" /> : null}
+                <View key={h.key} style={{ flexDirection: "row", alignItems: "center", borderTopWidth: i ? 1 : 0, borderTopColor: theme.border }}>
+                  <Tap onPress={() => openSend(h)} accessibilityRole="button" accessibilityLabel={`${h.token.name} on ${h.network.name}: ${formatTokenAmount(h.balance, h.token.decimals)} ${h.token.symbol}. Send`} haptic={false} style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 14, paddingLeft: 16, paddingRight: h.token.custom ? 4 : 16, paddingVertical: 14 }}>
+                    <TokenIcon symbol={h.token.symbol} network={h.network} />
+                    <View style={{ flex: 1 }}>
+                      <Text variant="subheading" numberOfLines={1}>{h.token.name}</Text>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                        <Text variant="caption" tone="secondary">{h.network.name}{price && !h.network.testnet ? ` · ${formatUsd(price.usd)}` : ""}</Text>
+                        {h.network.testnet ? <Pill label="Testnet" tone="warning" /> : null}
+                        {h.token.custom ? <Pill label="Unverified" tone="warning" /> : null}
+                      </View>
                     </View>
-                  </View>
-                  <View style={{ alignItems: "flex-end" }}>
-                    <Text variant="bodyStrong" style={{ fontVariant: ["tabular-nums"] }}>{mask(formatTokenAmount(h.balance, h.token.decimals))} {h.token.symbol}</Text>
-                    {h.usd !== undefined ? <Text variant="caption" tone="secondary">{mask(formatUsd(h.usd))}</Text> : null}
-                  </View>
-                </Tap>
+                    <View style={{ alignItems: "flex-end" }}>
+                      <Text variant="bodyStrong" style={{ fontVariant: ["tabular-nums"] }}>{mask(formatTokenAmount(h.balance, h.token.decimals))} {h.token.symbol}</Text>
+                      {h.usd !== undefined ? <Text variant="caption" tone="secondary">{mask(formatUsd(h.usd))}</Text> : null}
+                    </View>
+                  </Tap>
+                  {h.token.custom ? (
+                    <IconButton icon={Trash2} label={`Remove ${h.token.symbol} from wallet`} tone="plain" onPress={() => { p.removeCustomToken(h.token); toast(`${h.token.symbol} removed`, "success"); }} />
+                  ) : null}
+                </View>
               );
             })}
         {p.failedNetworks.map((n) => (
-          <View key={n.chain.id} style={{ flexDirection: "row", alignItems: "center", gap: 14, paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, borderTopColor: theme.border }}>
-            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: n.color, marginHorizontal: 16 }} />
+          <View key={n.id} style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, borderTopColor: theme.border }}>
+            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: n.color }} />
             <Text variant="caption" tone="negative" style={{ flex: 1 }}>{n.name} couldn't be reached</Text>
           </View>
         ))}
       </Card>
-      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 10 }}>
-        <Text variant="caption" tone="tertiary" style={{ flex: 1 }}>{p.updatedAt ? `Read live from each network · ${p.updatedAt.toLocaleTimeString()}` : "Reading balances…"}</Text>
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 10, gap: 8 }}>
+        <Tap onPress={() => { setAddError(null); setSheet("add"); }} accessibilityRole="button" accessibilityLabel="Add a token" style={{ flexDirection: "row", gap: 6, alignItems: "center", padding: 4 }}>
+          <Plus size={14} color={theme.accent} />
+          <Text variant="caption" tone="accent">Add a token</Text>
+        </Tap>
         <Tap onPress={p.refresh} accessibilityRole="button" accessibilityLabel="Refresh balances" style={{ flexDirection: "row", gap: 6, alignItems: "center", padding: 4 }}>
           <RefreshCw size={14} color={theme.accent} />
           <Text variant="caption" tone="accent">Refresh</Text>
         </Tap>
       </View>
-      <Text variant="caption" tone="tertiary" style={{ marginTop: 6 }}>Shows ETH, USDC, USDT, DAI, WETH and ARB. Other tokens, NFTs and Solana arrive in Phase 3b.</Text>
+      <Text variant="caption" tone="tertiary" style={{ marginTop: 6 }}>{p.updatedAt ? `Read live from each network · ${p.updatedAt.toLocaleTimeString()}` : "Reading balances…"}</Text>
     </View>
   );
 
-  const history = (
-    <View>
-      <SectionHeader title="Activity" />
-      <Card padded={!items.length}>
-        {items.length ? (
-          items.slice(0, 20).map((it, i) => {
-            const net = networkFor(it.chainId);
-            return (
-              <Tap key={it.hash} onPress={() => void WebBrowser.openBrowserAsync(explorerTx(it.chainId, it.hash))} accessibilityRole="link" accessibilityLabel={`Sent ${formatTokenAmount(BigInt(it.amount), it.decimals)} ${it.symbol} on ${net?.name}, ${it.status}. Open in explorer`} haptic={false} style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 14, borderTopWidth: i ? 1 : 0, borderTopColor: theme.border }}>
-                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: theme.surface, alignItems: "center", justifyContent: "center" }}>
-                  <ArrowUpRight size={18} color={theme.text} />
-                </View>
-                <View style={{ flex: 1, gap: 2 }}>
-                  <Text variant="subheading">Sent {it.symbol}</Text>
-                  <Text variant="caption" tone="secondary" numberOfLines={1}>To {it.toLabel ?? shortAddress(it.to)} · {net?.name} · {timeAgo(it.createdAt)}</Text>
-                </View>
-                <View style={{ alignItems: "flex-end", gap: 4 }}>
-                  <Text variant="bodyStrong">−{mask(formatTokenAmount(BigInt(it.amount), it.decimals))}</Text>
-                  <Pill label={it.status === "pending" ? "Pending" : it.status === "confirmed" ? "Confirmed" : "Failed"} tone={it.status === "pending" ? "warning" : it.status === "confirmed" ? "positive" : "negative"} />
-                </View>
-              </Tap>
-            );
-          })
-        ) : (
-          <EmptyState
-            icon={History}
-            title="No HENSENG transactions yet"
-            body="Sends you make in HENSENG are listed here with their live status. Incoming transfers show in your balances."
-            action={address ? { label: "View address on Etherscan", onPress: () => void WebBrowser.openBrowserAsync(explorerAddress(1, address)) } : undefined}
-          />
-        )}
-      </Card>
-      {items.length ? <Text variant="caption" tone="tertiary" style={{ marginTop: 8 }}>Transactions sent from HENSENG on this device. Tap one to open it in the explorer.</Text> : null}
+  const assets = (
+    <View style={{ gap: 12 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+        <Segmented value={view} onChange={setView} options={[["tokens", "Tokens"], ["nfts", "NFTs"]]} />
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <Text variant="caption" tone="secondary">Testnets</Text>
+          <Switch value={p.includeTestnets} onValueChange={p.setIncludeTestnets} trackColor={{ true: theme.accent, false: theme.surface }} thumbColor="#FFFFFF" accessibilityLabel="Show testnets" />
+        </View>
+      </View>
+      {view === "tokens" ? tokenRows : <WalletNfts includeTestnets={p.includeTestnets} />}
     </View>
   );
+
+  const history = <WalletActivity includeTestnets={p.includeTestnets} mask={mask} address={address} />;
+  const receiveAddress = receiveOn === "evm" ? address : solanaAddress;
 
   return (
     <Screen
@@ -233,26 +256,53 @@ export default function WalletScreen() {
         </View>
       )}
 
-      <Sheet visible={action === "receive"} onClose={() => setAction(null)} title="Receive">
-        <Text tone="secondary">This address works on Ethereum, Base, Arbitrum and their testnets. Only send assets on those networks to it.</Text>
+      <Sheet visible={sheet === "receive"} onClose={() => setSheet(null)} title="Receive">
+        <Segmented value={receiveOn} onChange={setReceiveOn} options={[["evm", "Ethereum · Base · Arbitrum"], ["solana", "Solana"]]} />
+        <Text tone="secondary">
+          {receiveOn === "evm"
+            ? "This address works on Ethereum, Base, Arbitrum and their testnets. Don't send Solana assets to it."
+            : "Your Solana address, from the same recovery phrase (it opens in Phantom too). Only send SOL and Solana tokens to it."}
+        </Text>
         <View style={{ alignSelf: "center", padding: 16, borderRadius: radius.lg, backgroundColor: "#FFFFFF" }}>
-          {address ? <QRCode value={address} size={200} color="#101014" backgroundColor="#FFFFFF" /> : null}
+          {receiveAddress ? <QRCode value={receiveAddress} size={200} color="#101014" backgroundColor="#FFFFFF" /> : null}
         </View>
         <Card style={{ gap: 6 }}>
-          <Text variant="label" tone="secondary">Your address</Text>
-          <Text variant="mono" selectable>{address}</Text>
+          <Text variant="label" tone="secondary">{receiveOn === "evm" ? "Your address" : "Your Solana address"}</Text>
+          <Text variant="mono" selectable>{receiveAddress}</Text>
         </Card>
-        <Button label="Copy address" icon={Copy} onPress={() => void copy()} />
-        <Button label="View on explorer" icon={ExternalLink} kind="secondary" onPress={() => address && void WebBrowser.openBrowserAsync(explorerAddress(1, address))} />
+        <Button label="Copy address" icon={Copy} onPress={() => void copy(receiveAddress)} />
+        <Button label="View on explorer" icon={ExternalLink} kind="secondary" onPress={() => receiveAddress && void WebBrowser.openBrowserAsync(explorerAddress(receiveOn === "evm" ? 1 : 101, receiveAddress))} />
       </Sheet>
 
-      <Sheet visible={action === "swap" || action === "bridge"} onClose={() => setAction(null)} title={action === "swap" ? "Swap" : "Bridge"}>
+      <Sheet visible={sheet === "send"} onClose={() => setSheet(null)} title="Send from">
+        <Button label="Ethereum, Base or Arbitrum" kind="secondary" onPress={() => { setSheet(null); openSend(); }} />
+        <Button label="Solana" kind="secondary" onPress={() => { setSheet(null); if (firstSolana) openSend(firstSolana); }} />
+      </Sheet>
+
+      <Sheet visible={sheet === "add"} onClose={() => setSheet(null)} title="Add a token">
+        <Text tone="secondary">Paste a token's contract address to track it. Anyone can create a token with any name, so only add tokens from a source you trust.</Text>
+        <View style={{ gap: 8 }}>
+          <Text variant="label" tone="secondary">Network</Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+            {NETWORKS.filter((n) => p.includeTestnets || !n.testnet).map((n) => (
+              <Tap key={n.id} onPress={() => { setAddNet(n.id); setAddError(null); }} accessibilityRole="radio" accessibilityState={{ selected: addNet === n.id }} accessibilityLabel={n.name} style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, height: 36, borderRadius: radius.full, backgroundColor: addNet === n.id ? theme.accentSoft : theme.surface, borderWidth: 1, borderColor: addNet === n.id ? theme.accent : "transparent" }}>
+                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: n.color }} />
+                <Text variant="caption" style={{ color: addNet === n.id ? theme.accent : theme.textSecondary }}>{n.name}</Text>
+              </Tap>
+            ))}
+          </View>
+        </View>
+        <Field label="Contract address" value={addInput} onChangeText={(v) => { setAddInput(v); setAddError(null); }} placeholder="0x…" autoCapitalize="none" autoCorrect={false} error={addError} onSubmitEditing={() => void addToken()} />
+        <Button label="Add token" loading={adding} disabled={!addInput.trim()} onPress={() => void addToken()} />
+      </Sheet>
+
+      <Sheet visible={sheet === "swap" || sheet === "bridge"} onClose={() => setSheet(null)} title={sheet === "swap" ? "Swap" : "Bridge"}>
         <EmptyState
-          icon={action === "swap" ? Repeat : ArrowLeftRight}
-          title={action === "swap" ? "Swapping arrives in Phase 4" : "Bridging arrives in Phase 4"}
-          body={action === "swap" ? "Real quotes from 0x and other aggregators, with every fee shown before you sign." : "Move assets between networks through vetted bridges, tracked until they arrive."}
+          icon={sheet === "swap" ? Repeat : ArrowLeftRight}
+          title={sheet === "swap" ? "Swapping arrives in Phase 4" : "Bridging arrives in Phase 4"}
+          body={sheet === "swap" ? "Real quotes from 0x and other aggregators, with every fee shown before you sign." : "Move assets between networks through vetted bridges, tracked until they arrive."}
         />
-        <Button label="Got it" kind="secondary" onPress={() => setAction(null)} />
+        <Button label="Got it" kind="secondary" onPress={() => setSheet(null)} />
       </Sheet>
     </Screen>
   );

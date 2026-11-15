@@ -10,6 +10,8 @@
 >
 > **Phase 3a:** the wallet sends ETH and tokens (USDC, USDT, DAI, WETH, ARB) on Ethereum, Base and Arbitrum, with recipient checks, a fee preview, password confirmation and live status. It also scans payment QR codes and shows USD prices. See `docs/super-app-phase-3a.md`.
 >
+> **Phase 3b:** Solana (SOL and USDC, same recovery phrase, Phantom-compatible), adding your own tokens, NFTs, and full incoming/outgoing history via the server's indexer. See `docs/super-app-phase-3b.md`.
+>
 > Run the app with `pnpm app` (Expo). Set `EXPO_PUBLIC_API_URL` in `apps/app/.env.local` to connect it to the API in `apps/web`.
 
 ## Backend: swap and bridge aggregator (`apps/web`)
@@ -58,6 +60,7 @@ On Windows PowerShell, use `Copy-Item .env apps/web/.env.local` and so on in pla
 | `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` | recommended | From dashboard.walletconnect.com (free). Without it, only browser wallets and Coinbase Wallet appear. |
 | `ADMIN_BOOTSTRAP_ADDRESSES` | first run | Comma-separated wallets that become Super Admin on first sign-in |
 | `RPC_URL_<chainId>` | optional | Server-side RPC (Alchemy/QuickNode). Public RPCs are used if empty. |
+| `ALCHEMY_API_KEY` | optional | Wallet history and NFTs (server-side). Without it the app says they aren't set up. |
 | `COINGECKO_API_KEY` | optional | Free CoinGecko demo key for wallet USD prices. Works without one, at lower rate limits. |
 
 ### Becoming the first admin

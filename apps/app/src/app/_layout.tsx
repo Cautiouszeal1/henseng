@@ -53,6 +53,7 @@ function RootNavigator() {
           <Stack.Screen name="edit-profile" options={{ presentation: "modal" }} />
           <Stack.Screen name="notifications" options={{ animation: "slide_from_right" }} />
           <Stack.Screen name="send" options={{ presentation: "modal" }} />
+          <Stack.Screen name="send-solana" options={{ presentation: "modal" }} />
           <Stack.Screen name="scan" options={{ presentation: "fullScreenModal" }} />
         </Stack.Protected>
       </Stack>

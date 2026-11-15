@@ -1,13 +1,13 @@
 import { View } from "react-native";
 import { Text } from "../ui/primitives";
 import { useTheme } from "../ui/theme";
-import type { Network } from "./networks";
+import type { NetworkInfo } from "./networks";
 
-const COLORS: Record<string, string> = { ETH: "#627EEA", USDC: "#2775CA", USDT: "#26A17B", DAI: "#F5AC37", WETH: "#EC4A8A", ARB: "#28A0F0" };
-const GLYPHS: Record<string, string> = { ETH: "Ξ", USDC: "$", USDT: "₮", DAI: "◈", WETH: "W", ARB: "A" };
+const COLORS: Record<string, string> = { SOL: "#9945FF", ETH: "#627EEA", USDC: "#2775CA", USDT: "#26A17B", DAI: "#F5AC37", WETH: "#EC4A8A", ARB: "#28A0F0" };
+const GLYPHS: Record<string, string> = { SOL: "◎", ETH: "Ξ", USDC: "$", USDT: "₮", DAI: "◈", WETH: "W", ARB: "A" };
 
 /** Token badge with a small network dot, drawn locally (no remote logo requests). */
-export function TokenIcon({ symbol, network, size = 42 }: { symbol: string; network?: Network; size?: number }) {
+export function TokenIcon({ symbol, network, size = 42 }: { symbol: string; network?: NetworkInfo; size?: number }) {
   const { theme } = useTheme();
   const dot = Math.round(size * 0.43);
   return (

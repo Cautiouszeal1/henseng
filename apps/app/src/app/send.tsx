@@ -16,12 +16,13 @@ import { explorerTx, networkFor, publicClient } from "../wallet/networks";
 import { useResolveRecipient } from "../wallet/resolve-recipient";
 import { onScanResult } from "../wallet/scan-bus";
 import { buildTransfer, estimateFee, sendErrorMessage, type FeeEstimate, type TxRequest } from "../wallet/send";
+import { AddressBlock, Notice } from "../wallet/send-ui";
 import { TokenIcon } from "../wallet/token-icon";
-import { formatUsd, usePortfolio } from "../wallet/use-portfolio";
+import { formatUsd, usePortfolio, type WalletToken } from "../wallet/use-portfolio";
 import { useWallet } from "../wallet/wallet-context";
 
 type Review = {
-  token: TokenInfo;
+  token: WalletToken;
   to: `0x${string}`;
   toLabel: string;
   amount: bigint;
@@ -30,32 +31,6 @@ type Review = {
   isContract: boolean;
   firstTime: boolean;
 };
-
-/** "0x1234 5678 …" groups so the whole address is easy to check against the source. */
-function AddressBlock({ address }: { address: string }) {
-  const { theme } = useTheme();
-  const body = address.slice(2);
-  const groups = body.match(/.{1,4}/g) ?? [];
-  return (
-    <Text variant="mono" selectable accessibilityLabel={address} style={{ lineHeight: 22 }}>
-      <Text variant="mono" style={{ color: theme.accent }}>0x{groups[0]}</Text>
-      {" "}{groups.slice(1, -1).join(" ")}{" "}
-      <Text variant="mono" style={{ color: theme.accent }}>{groups.at(-1)}</Text>
-    </Text>
-  );
-}
-
-function Notice({ tone, children }: { tone: "warning" | "info" | "negative"; children: string }) {
-  const { theme } = useTheme();
-  const color = tone === "warning" ? theme.warning : tone === "negative" ? theme.negative : theme.accent;
-  const Icon = tone === "info" ? Info : AlertTriangle;
-  return (
-    <View style={{ flexDirection: "row", gap: 10, padding: 12, borderRadius: radius.md, backgroundColor: color + "14", borderWidth: 1, borderColor: color + "40" }}>
-      <Icon size={16} color={color} style={{ marginTop: 2 }} />
-      <Text variant="caption" style={{ color, flex: 1 }}>{children}</Text>
-    </View>
-  );
-}
 
 export default function SendScreen() {
   const { theme } = useTheme();
@@ -83,8 +58,13 @@ export default function SendScreen() {
   const [hash, setHash] = useState<`0x${string}` | null>(null);
 
   // Assets you can send: everything with a balance, plus the chosen one.
-  const sendable = portfolio.holdings.filter((h) => h.balance > 0n);
-  const token: TokenInfo | undefined = useMemo(() => TOKENS.find((t) => tokenKey(t) === tokenK) ?? sendable[0]?.token, [tokenK, sendable]);
+  // EVM assets only; Solana has its own send screen.
+  const sendable = portfolio.holdings.filter((h) => h.balance > 0n && h.network.kind === "evm");
+  const findAny = (chainId: number, addr: string | null) => portfolio.allTokens.find((t) => tokenKey(t) === tokenKey({ chainId, address: addr }));
+  const token: WalletToken | undefined = useMemo(
+    () => portfolio.allTokens.find((t) => tokenKey(t) === tokenK) ?? sendable[0]?.token,
+    [tokenK, sendable, portfolio.allTokens],
+  );
   const network = token ? networkFor(token.chainId) : undefined;
   const balance = token ? portfolio.balanceOf(token) : undefined;
   const price = token ? portfolio.priceOf(token) : undefined;
@@ -98,7 +78,7 @@ export default function SendScreen() {
       return;
     }
     if (r.kind === "token") {
-      const t = r.chainId ? findToken(r.chainId, r.token) : TOKENS.find((x) => x.address?.toLowerCase() === r.token.toLowerCase());
+      const t = r.chainId ? findAny(r.chainId, r.token) : portfolio.allTokens.find((x) => x.address?.toLowerCase() === r.token.toLowerCase());
       if (!t) {
         setFormError("That payment link asks for a token HENSENG doesn't list yet, so it can't be sent from here.");
         return;
@@ -115,7 +95,7 @@ export default function SendScreen() {
 
   useEffect(() => {
     if (params.chainId && params.token !== undefined) {
-      const t = findToken(Number(params.chainId), params.token === "native" ? null : params.token);
+      const t = findAny(Number(params.chainId), params.token === "native" ? null : params.token);
       if (t) setTokenK(tokenKey(t));
     }
     if (params.amount) setAmountInput(params.amount);
@@ -166,7 +146,7 @@ export default function SendScreen() {
       if ("error" in r) return setToError(r.error);
       const to = r.address;
       if (to.toLowerCase() === address.toLowerCase()) return setToError("That's your own address.");
-      if (TOKENS.some((t) => t.address?.toLowerCase() === to.toLowerCase())) {
+      if (portfolio.allTokens.some((t) => t.address?.toLowerCase() === to.toLowerCase())) {
         return setToError("That's a token contract, not a wallet. Tokens sent there are lost.");
       }
       const tx = buildTransfer(token, to, amt.value);
@@ -331,6 +311,9 @@ export default function SendScreen() {
             </Card>
             {review.isContract ? (
               <Notice tone="warning">{`This address is a smart contract. Only continue if you know it accepts ${review.token.symbol} on ${rNet.name}; tokens sent to the wrong contract are usually lost for good.`}</Notice>
+            ) : null}
+            {review.token.custom ? (
+              <Notice tone="warning">{`${review.token.symbol} is a token you added yourself. HENSENG hasn't verified it, and anyone can create a token with any name.`}</Notice>
             ) : null}
             {review.firstTime ? (
               <Notice tone="info">You haven't sent to this address before. Check the first and last characters against where you got it. Scammers use look-alike addresses.</Notice>

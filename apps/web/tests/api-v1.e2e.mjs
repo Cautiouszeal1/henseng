@@ -92,7 +92,25 @@ check("profile lookup rejects bad addresses", (await call("POST", "/profiles/loo
 check("report an encrypted chat (no contents)", (await call("POST", "/reports", tc, { targetType: "chat", targetId: Bw.address.toLowerCase(), reason: "Scam DMs" })).status === 201);
 const pr = await call("GET", "/prices?ids=ethereum,usd-coin");
 check("prices: known ids answered (priced or reported missing, never invented)", pr.status === 200 && ["ethereum", "usd-coin"].every((id) => (pr.data.prices[id] && typeof pr.data.prices[id].usd === "number") || pr.data.missing.includes(id)));
-check("prices: unknown id refused", (await call("GET", "/prices?ids=dogecoin")).status === 400);
+check("prices: only unknown ids refused", (await call("GET", "/prices?ids=dogecoin")).status === 400);
+const mixed = await call("GET", "/prices?ids=ethereum,dogecoin");
+check("prices: unknown ids among known ones reported missing", mixed.status === 200 && mixed.data.missing.includes("dogecoin"));
+if (process.env.FAKE_ALCHEMY) {
+  const tr = await call("GET", "/wallet/transfers?chainId=8453", tc);
+  const t = tr.data.transfers ?? [];
+  check("history: incoming and outgoing, newest first", tr.status === 200 && t.length === 4 && t[0].kind === "nft" && t.at(-1).direction === "out" && t.at(-1).kind === "native");
+  const usdc = t.find((x) => x.symbol === "USDC");
+  check("history: exact token amounts, verified flag", usdc?.amount === "42500000" && usdc.decimals === 6 && usdc.verified === true && usdc.direction === "in");
+  check("history: unknown tokens flagged unverified", t.some((x) => x.kind === "token" && !x.verified));
+  const before = Number(await (await fetch(process.env.FAKE_ALCHEMY + "/_calls")).text());
+  await call("GET", "/wallet/transfers?chainId=8453", tc);
+  check("history: cached", Number(await (await fetch(process.env.FAKE_ALCHEMY + "/_calls")).text()) === before);
+  const nf = await call("GET", "/wallet/nfts?chainId=8453", tc);
+  check("nfts: spam hidden and counted", nf.status === 200 && nf.data.nfts.length === 2 && nf.data.hiddenSpam === 1);
+  check("nfts: unsafe image URLs dropped, names filled", nf.data.nfts[1].image === null && nf.data.nfts[1].name.startsWith("Badges #") && nf.data.nfts[1].standard === "ERC1155");
+  check("indexer: unsupported network refused", (await call("GET", "/wallet/nfts?chainId=56", tc)).status === 400);
+  check("indexer: needs sign-in", (await call("GET", "/wallet/nfts?chainId=8453")).status === 401);
+}
 check("logout revokes token", (await call("POST", "/auth/logout", tc)).status === 200 && (await call("GET", "/me", tc)).status === 401);
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail) process.exit(1);

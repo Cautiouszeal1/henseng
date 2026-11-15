@@ -1,9 +1,11 @@
 import {
   decryptVault,
   deriveEvmAccount,
+  deriveSolanaKeypair,
   encryptVault,
   isValidMnemonic,
   normalizeMnemonic,
+  signTransaction,
   WrongPasswordError,
 } from "@henseng/wallet";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -32,6 +34,10 @@ const BACKGROUND_GRACE_MS = 60 * 1000;
 interface WalletApi {
   status: Status;
   address: `0x${string}` | null;
+  /** Solana address from the same recovery phrase (m/44'/501'/0'/0', Phantom-compatible) */
+  solanaAddress: string | null;
+  /** Signs a compiled Solana message on this device; returns wire bytes and the signature (tx id). */
+  signSolana: (message: Uint8Array) => { wire: Uint8Array; signature: string };
   /** Creates (or imports) a wallet, encrypts it and unlocks it. */
   createWallet: (mnemonic: string, password: string) => Promise<void>;
   unlock: (password: string) => Promise<void>;
@@ -54,6 +60,7 @@ const Ctx = createContext<WalletApi | null>(null);
 export function WalletProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<Status>("loading");
   const [address, setAddress] = useState<`0x${string}` | null>(null);
+  const [solanaAddress, setSolanaAddress] = useState<string | null>(null);
   const phrase = useRef<string | null>(null);
   const lastActive = useRef(Date.now());
   const backgroundedAt = useRef<number | null>(null);
@@ -67,6 +74,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const lock = useCallback(() => {
     phrase.current = null;
     setAddress(null);
+    setSolanaAddress(null);
     setStatus((s) => (s === "unlocked" ? "locked" : s));
   }, []);
 
@@ -93,6 +101,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     const vault = await encryptVault({ mnemonic: clean, accountCount: 1, createdAt: new Date().toISOString() }, password);
     await saveVault(vault);
     phrase.current = clean;
+    setSolanaAddress(deriveSolanaKeypair(clean).address);
     lastActive.current = Date.now();
     setAddress(account.address);
     setStatus("unlocked");
@@ -106,6 +115,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     }
     const payload = await decryptVault(vault, password); // throws WrongPasswordError
     phrase.current = payload.mnemonic;
+    setSolanaAddress(deriveSolanaKeypair(payload.mnemonic).address);
     lastActive.current = Date.now();
     setAddress(deriveEvmAccount(payload.mnemonic).address);
     setStatus("unlocked");
@@ -121,6 +131,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     await deleteVault();
     phrase.current = null;
     setAddress(null);
+    setSolanaAddress(null);
+    setSolanaAddress(null);
     setStatus("none");
   }, []);
 
@@ -151,9 +163,15 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     return client.sendTransaction({ to, value, data, gas });
   }, []);
 
+  const signSolana = useCallback<WalletApi["signSolana"]>((message) => {
+    if (!phrase.current) throw new Error("Unlock HENSENG first.");
+    lastActive.current = Date.now();
+    return signTransaction(message, deriveSolanaKeypair(phrase.current).secret);
+  }, []);
+
   const value = useMemo<WalletApi>(
-    () => ({ status, address, createWallet, unlock, lock, revealPhrase, removeWallet, signMessage, verifyPassword, sendTransaction, touch: () => (lastActive.current = Date.now()) }),
-    [status, address, createWallet, unlock, lock, revealPhrase, removeWallet, signMessage, verifyPassword, sendTransaction],
+    () => ({ status, address, solanaAddress, signSolana, createWallet, unlock, lock, revealPhrase, removeWallet, signMessage, verifyPassword, sendTransaction, touch: () => (lastActive.current = Date.now()) }),
+    [status, address, solanaAddress, signSolana, createWallet, unlock, lock, revealPhrase, removeWallet, signMessage, verifyPassword, sendTransaction],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

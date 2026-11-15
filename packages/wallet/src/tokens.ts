@@ -8,8 +8,8 @@
 
 export interface TokenInfo {
   chainId: number;
-  /** null = the network's native asset (ETH on all supported networks) */
-  address: `0x${string}` | null;
+  /** null = the network's native asset (ETH, or SOL on Solana). EVM: 0x address; Solana: mint (base58, case-sensitive). */
+  address: string | null;
   symbol: string;
   name: string;
   decimals: number;
@@ -23,6 +23,8 @@ export const CHAIN_IDS = {
   arbitrum: 42161,
   sepolia: 11155111,
   baseSepolia: 84532,
+  solana: 101,
+  solanaDevnet: 103,
 } as const;
 
 const eth = (chainId: number, testnet = false): TokenInfo => ({
@@ -56,16 +58,25 @@ export const TOKENS: TokenInfo[] = [
   { chainId: CHAIN_IDS.sepolia, address: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", symbol: "USDC", name: "Test USDC", decimals: 6 },
   eth(CHAIN_IDS.baseSepolia, true),
   { chainId: CHAIN_IDS.baseSepolia, address: "0x036CbD53842c5426634e7929541eC2318f3dCF7e", symbol: "USDC", name: "Test USDC", decimals: 6 },
+  // Solana (USDC mints from Circle's official list)
+  { chainId: CHAIN_IDS.solana, address: null, symbol: "SOL", name: "Solana", decimals: 9, priceId: "solana" },
+  { chainId: CHAIN_IDS.solana, address: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", symbol: "USDC", name: "USD Coin", decimals: 6, priceId: "usd-coin" },
+  { chainId: CHAIN_IDS.solanaDevnet, address: null, symbol: "SOL", name: "Devnet SOL", decimals: 9 },
+  { chainId: CHAIN_IDS.solanaDevnet, address: "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU", symbol: "USDC", name: "Test USDC", decimals: 6 },
 ];
 
-export const tokenKey = (t: Pick<TokenInfo, "chainId" | "address">) => `${t.chainId}:${t.address ? t.address.toLowerCase() : "native"}`;
+const isSolanaId = (id: number) => id === CHAIN_IDS.solana || id === CHAIN_IDS.solanaDevnet;
+
+/** Stable key; EVM addresses are case-insensitive, Solana mints are not. */
+export const tokenKey = (t: Pick<TokenInfo, "chainId" | "address">) =>
+  `${t.chainId}:${t.address ? (isSolanaId(t.chainId) ? t.address : t.address.toLowerCase()) : "native"}`;
 
 export function tokensFor(chainId: number): TokenInfo[] {
   return TOKENS.filter((t) => t.chainId === chainId);
 }
 
 export function findToken(chainId: number, address: string | null): TokenInfo | undefined {
-  return TOKENS.find((t) => t.chainId === chainId && (address === null ? t.address === null : t.address?.toLowerCase() === address.toLowerCase()));
+  return TOKENS.find((t) => t.chainId === chainId && tokenKey(t) === tokenKey({ chainId, address }));
 }
 
 /** Every CoinGecko id the app may ask prices for. The price API only accepts these. */

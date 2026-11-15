@@ -1,6 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { isSolanaChain } from "@henseng/wallet";
 import { publicClient } from "./networks";
+import { signatureStatus } from "./solana-rpc";
 import { usePortfolio } from "./use-portfolio";
 import { useWallet } from "./wallet-context";
 
@@ -10,13 +12,14 @@ import { useWallet } from "./wallet-context";
  * Incoming transfers and activity from other apps need an indexer (later phase).
  */
 export interface ActivityItem {
-  hash: `0x${string}`;
+  /** EVM transaction hash, or Solana signature */
+  hash: string;
   chainId: number;
   kind: "send";
   symbol: string;
   decimals: number;
   amount: string; // base units as a string (bigint isn't JSON-safe)
-  to: `0x${string}`;
+  to: string;
   toLabel?: string;
   createdAt: number;
   status: "pending" | "confirmed" | "failed";
@@ -64,8 +67,14 @@ export function ActivityProvider({ children }: { children: ReactNode }) {
     const tick = async () => {
       for (const p of items.filter((i) => i.status === "pending")) {
         try {
-          const r = await publicClient(p.chainId).getTransactionReceipt({ hash: p.hash });
-          const status = r.status === "success" ? "confirmed" : "failed";
+          let status: ActivityItem["status"];
+          if (isSolanaChain(p.chainId)) {
+            status = await signatureStatus(p.chainId, p.hash);
+            if (status === "pending") continue;
+          } else {
+            const r = await publicClient(p.chainId).getTransactionReceipt({ hash: p.hash as `0x${string}` });
+            status = r.status === "success" ? "confirmed" : "failed";
+          }
           setItems((list) => list.map((i) => (i.hash === p.hash ? { ...i, status } : i)));
           refreshBalances(); // the fee was spent either way
         } catch {
@@ -84,7 +93,7 @@ export function ActivityProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<ActivityApi>(
-    () => ({ items, add, knownRecipients: new Set(items.map((i) => i.to.toLowerCase())), get: (hash) => items.find((i) => i.hash === hash) }),
+    () => ({ items, add, knownRecipients: new Set(items.map((i) => (i.to.startsWith("0x") ? i.to.toLowerCase() : i.to))), get: (hash) => items.find((i) => i.hash === hash) }),
     [items, add],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

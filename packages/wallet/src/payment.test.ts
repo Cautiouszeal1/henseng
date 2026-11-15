@@ -8,14 +8,14 @@ const USDC_BASE = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 
 describe("token list", () => {
   it("every address is a valid checksummed address", () => {
-    for (const t of TOKENS) if (t.address) expect(getAddress(t.address)).toBe(t.address);
+    for (const t of TOKENS) if (t.address?.startsWith("0x")) expect(getAddress(t.address)).toBe(t.address);
   });
   it("no duplicates per network", () => {
     const keys = TOKENS.map(tokenKey);
     expect(new Set(keys).size).toBe(keys.length);
   });
   it("testnet assets carry no price", () => {
-    for (const t of TOKENS.filter((x) => x.chainId === 11155111 || x.chainId === 84532)) expect(t.priceId).toBeUndefined();
+    for (const t of TOKENS.filter((x) => [11155111, 84532, 103].includes(x.chainId))) expect(t.priceId).toBeUndefined();
   });
   it("finds tokens case-insensitively", () => {
     expect(findToken(8453, USDC_BASE.toLowerCase())?.symbol).toBe("USDC");

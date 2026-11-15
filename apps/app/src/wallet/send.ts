@@ -15,7 +15,7 @@ export function buildTransfer(token: TokenInfo, recipient: `0x${string}`, amount
   if (!token.address) return { chainId: token.chainId, to: recipient, value: amount };
   return {
     chainId: token.chainId,
-    to: token.address,
+    to: token.address as `0x${string}`,
     value: 0n,
     data: encodeFunctionData({ abi: ERC20_ABI, functionName: "transfer", args: [recipient, amount] }),
   };
