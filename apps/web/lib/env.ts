@@ -5,10 +5,16 @@ import { z } from "zod";
  * Server environment, validated lazily so that `next build` works without
  * secrets. Any route that needs a value calls serverEnv() and fails clearly.
  */
+/** On Vercel, the project's production domain (e.g. https://henseng.vercel.app) unless set explicitly. */
+export function defaultSiteUrl() {
+  const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  return vercel ? `https://${vercel}` : "http://localhost:3000";
+}
+
 const schema = z.object({
   DATABASE_URL: z.string().min(1).optional(),
   SESSION_SECRET: z.string().min(32, "SESSION_SECRET must be at least 32 characters"),
-  NEXT_PUBLIC_SITE_URL: z.url().default("http://localhost:3000"),
+  NEXT_PUBLIC_SITE_URL: z.url().default(defaultSiteUrl()),
   ADMIN_BOOTSTRAP_ADDRESSES: z.string().default(""),
 });
 

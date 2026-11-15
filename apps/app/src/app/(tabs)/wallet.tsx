@@ -15,7 +15,7 @@ import { Button, Card, Field, IconButton, Pill, Skeleton, Tap, Text } from "../.
 import { Screen } from "../../ui/screen";
 import { useLayout, useTheme } from "../../ui/theme";
 import { radius } from "../../ui/tokens";
-import { explorerAddress, NETWORKS } from "../../wallet/networks";
+import { explorerAddress, NETWORKS, TESTNETS_ENABLED } from "../../wallet/networks";
 import { TokenIcon } from "../../wallet/token-icon";
 import { formatUsd, usePortfolio, type Holding } from "../../wallet/use-portfolio";
 import { useWallet } from "../../wallet/wallet-context";
@@ -217,10 +217,12 @@ export default function WalletScreen() {
     <View style={{ gap: 12 }}>
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
         <Segmented value={view} onChange={setView} options={[["tokens", "Tokens"], ["nfts", "NFTs"]]} />
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <Text variant="caption" tone="secondary">Testnets</Text>
-          <Switch value={p.includeTestnets} onValueChange={p.setIncludeTestnets} trackColor={{ true: theme.accent, false: theme.surface }} thumbColor="#FFFFFF" accessibilityLabel="Show testnets" />
-        </View>
+        {TESTNETS_ENABLED ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <Text variant="caption" tone="secondary">Testnets</Text>
+            <Switch value={p.includeTestnets} onValueChange={p.setIncludeTestnets} trackColor={{ true: theme.accent, false: theme.surface }} thumbColor="#FFFFFF" accessibilityLabel="Show testnets" />
+          </View>
+        ) : null}
       </View>
       {view === "tokens" ? tokenRows : <WalletNfts includeTestnets={p.includeTestnets} />}
     </View>

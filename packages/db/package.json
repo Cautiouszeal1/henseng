@@ -16,7 +16,8 @@
     "migrate:dev": "prisma migrate dev",
     "migrate:deploy": "prisma migrate deploy",
     "seed": "prisma db seed",
-    "test": "echo \"db: no unit tests (covered by integration tests in later phases)\""
+    "test": "echo \"db: no unit tests (covered by integration tests in later phases)\"",
+    "vercel:setup": "node scripts/deploy.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.1",

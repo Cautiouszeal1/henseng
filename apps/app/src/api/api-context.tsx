@@ -14,7 +14,10 @@ import { ApiError, type Me } from "./types";
  * a 30-day session token (shown under Profile → Devices, revocable).
  * Without an API URL the app runs in preview mode for social features.
  */
-export const API_URL = (process.env.EXPO_PUBLIC_API_URL ?? "").replace(/\/$/, "");
+// When the web app is served from the HENSENG website itself (e.g. https://<site>/app), the API
+// is on the same domain, so no setting is needed. Phones and the extension need EXPO_PUBLIC_API_URL.
+const sameOrigin = typeof window !== "undefined" && typeof window.location?.protocol === "string" && /^https?:$/.test(window.location.protocol) ? window.location.origin : "";
+export const API_URL = (process.env.EXPO_PUBLIC_API_URL || sameOrigin).replace(/\/$/, "");
 
 type Status = "off" | "connecting" | "ready" | "error";
 

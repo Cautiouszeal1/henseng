@@ -54,6 +54,9 @@ export function SiteHeader() {
           )}
         </nav>
         <div className="ml-auto flex items-center gap-2 lg:ml-0">
+          <a href="/app" className="inline-flex h-10 items-center rounded-[var(--radius-control)] bg-volt px-4 text-sm font-medium text-white hover:bg-volt-hover">
+            Open app
+          </a>
           <WalletButton />
           <button
             className="inline-flex h-10 w-10 items-center justify-center rounded-[var(--radius-control)] text-ink-muted hover:bg-deeper lg:hidden"

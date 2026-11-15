@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { formatMetric } from "@henseng/core";
-import { Badge, ButtonLink } from "@/components/ui";
+import { Badge, ButtonAnchor, ButtonLink } from "@/components/ui";
 import { RouteMap } from "@/components/route-map";
 import { listChains } from "@/lib/registry";
 import { getPublicMetrics } from "@/lib/public-metrics";
@@ -69,10 +69,12 @@ export default async function HomePage() {
             One destination for cross-chain swaps, seamless bridging, testnet exploration and Web3 rewards.
           </p>
           <div className="mt-10 flex flex-wrap gap-3">
-            <ButtonLink href="/swap" className="h-12 px-6 text-[15px]">Start Swapping</ButtonLink>
+            <ButtonAnchor href="/app" className="h-12 px-6 text-[15px]">Open HENSENG</ButtonAnchor>
             <ButtonLink href="/airdrops" variant="secondary" className="h-12 px-6 text-[15px]">Explore Airdrops</ButtonLink>
           </div>
-          <p className="mt-6 text-sm text-ink-faint">HENSENG is in development. Swapping and bridging are not live yet.</p>
+          <p className="mt-6 text-sm text-ink-faint">
+            The HENSENG app (wallet, encrypted chat, swaps and bridging) runs in your browser at /app and on iPhone and Android. The swap and bridge pages on this site are not live yet.
+          </p>
         </div>
         <RouteMap registry={registry} />
       </section>

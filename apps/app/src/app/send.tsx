@@ -13,7 +13,7 @@ import { ScreenGlow } from "../ui/art";
 import { useTheme } from "../ui/theme";
 import { radius } from "../ui/tokens";
 import { useActivity } from "../wallet/activity";
-import { explorerTx, networkFor, publicClient } from "../wallet/networks";
+import { explorerTx, networkFor, publicClient, TESTNETS_ENABLED } from "../wallet/networks";
 import { useResolveRecipient } from "../wallet/resolve-recipient";
 import { onScanResult } from "../wallet/scan-bus";
 import { buildTransfer, estimateFee, sendErrorMessage, type FeeEstimate, type TxRequest } from "../wallet/send";
@@ -355,7 +355,7 @@ export default function SendScreen() {
             <Text tone="secondary">
               {portfolio.failedNetworks.length ? "Some networks couldn't be reached, so balances may be missing. Go back and tap Refresh." : "Your wallet has no balance on the supported networks. Use Receive to add funds."}
             </Text>
-            {!portfolio.includeTestnets ? <Button label="Show testnet balances" kind="secondary" onPress={() => portfolio.setIncludeTestnets(true)} /> : null}
+            {TESTNETS_ENABLED && !portfolio.includeTestnets ? <Button label="Show testnet balances" kind="secondary" onPress={() => portfolio.setIncludeTestnets(true)} /> : null}
           </Card>
         ) : (
           <>

@@ -4,7 +4,7 @@ This is the checklist for getting HENSENG into the three stores. The code side i
 
 ## 0. Before any store
 
-1. **Deploy the API** (`apps/web`) to a public HTTPS URL, with production settings:
+1. **Deploy the API** (`apps/web`) to a public HTTPS URL (step by step for Vercel: `deploy-vercel.md`), with production settings:
    - `DATABASE_URL`;
    - `NEXT_PUBLIC_SITE_URL`;
    - `ALCHEMY_API_KEY`;

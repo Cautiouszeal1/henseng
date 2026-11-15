@@ -15,7 +15,10 @@ import { clearLocalMessagingStorage, connectXmtp } from "./xmtp";
  * ("dev" for testing, "production" for launch). Without it, Chats shows the
  * labelled preview.
  */
-export const XMTP_ENV = (process.env.EXPO_PUBLIC_XMTP_ENV ?? "") as "" | "dev" | "production" | "memory";
+// XMTP's production network unless a build asks otherwise: "dev" (XMTP test network), "memory"
+// (automated tests) or "off".
+const XMTP_SETTING = (process.env.EXPO_PUBLIC_XMTP_ENV || "production") as "off" | "dev" | "production" | "memory";
+export const XMTP_ENV = (XMTP_SETTING === "off" ? "" : XMTP_SETTING) as "" | "dev" | "production" | "memory";
 /** "memory" = simulated, unencrypted in-memory client for UI tests only (see memory-client.ts). */
 export const MESSAGING_TEST_MODE = XMTP_ENV === "memory";
 

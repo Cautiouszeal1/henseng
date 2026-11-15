@@ -61,7 +61,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
     "test": "vitest run",
-    "build:extension": "node scripts/build-extension.mjs"
+    "build:extension": "node scripts/build-extension.mjs",
+    "build:website": "node scripts/build-website.mjs"
   },
   "private": true
 }

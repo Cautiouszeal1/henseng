@@ -32,6 +32,11 @@ export function ButtonLink({
   return <Link className={clsx(buttonBase, buttonVariants[variant], className)} {...props} />;
 }
 
+/** A button-styled plain link, for pages outside the Next.js app such as the HENSENG web app at /app. */
+export function ButtonAnchor({ variant = "primary", className, ...props }: ComponentProps<"a"> & { variant?: ButtonVariant }) {
+  return <a className={clsx(buttonBase, buttonVariants[variant], className)} {...props} />;
+}
+
 type Tone = "neutral" | "mainnet" | "testnet" | "live" | "warn" | "danger";
 
 const toneClasses: Record<Tone, string> = {

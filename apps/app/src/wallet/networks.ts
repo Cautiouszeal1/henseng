@@ -24,20 +24,28 @@ export interface Network extends NetworkInfo {
 
 const evm = (chain: Chain, rest: Omit<Network, "id" | "kind" | "chain">): Network => ({ id: chain.id, kind: "evm", chain, ...rest });
 
+/**
+ * Test networks (Sepolia, Base Sepolia, Solana Devnet) are left out of normal builds, so people
+ * only ever see real networks. Developer and test builds turn them on with
+ * EXPO_PUBLIC_ENABLE_TESTNETS=1.
+ */
+export const TESTNETS_ENABLED = process.env.EXPO_PUBLIC_ENABLE_TESTNETS === "1";
+const available = <T extends { testnet: boolean }>(list: T[]) => list.filter((n) => TESTNETS_ENABLED || !n.testnet);
+
 /** EVM networks the wallet supports. */
-export const NETWORKS: Network[] = [
+export const NETWORKS: Network[] = available([
   evm(mainnet, { name: "Ethereum", short: "ETH", color: "#627EEA", testnet: false, explorer: "https://etherscan.io" }),
   evm(base, { name: "Base", short: "BASE", color: "#0052FF", testnet: false, explorer: "https://basescan.org" }),
   evm(arbitrum, { name: "Arbitrum", short: "ARB", color: "#28A0F0", testnet: false, explorer: "https://arbiscan.io" }),
   evm(sepolia, { name: "Sepolia", short: "SEP", color: "#8957FF", testnet: true, explorer: "https://sepolia.etherscan.io" }),
   evm(baseSepolia, { name: "Base Sepolia", short: "BSEP", color: "#397BFF", testnet: true, explorer: "https://sepolia.basescan.org" }),
-];
+]);
 
 /** Solana clusters, sharing the same recovery phrase (different address). */
-export const SOLANA_NETWORKS: NetworkInfo[] = [
+export const SOLANA_NETWORKS: NetworkInfo[] = available([
   { id: 101, kind: "solana", name: "Solana", short: "SOL", color: "#14F195", testnet: false, explorer: "https://explorer.solana.com" },
   { id: 103, kind: "solana", name: "Solana Devnet", short: "SOLD", color: "#9945FF", testnet: true, explorer: "https://explorer.solana.com" },
-];
+]);
 
 export const ALL_NETWORKS: NetworkInfo[] = [...NETWORKS, ...SOLANA_NETWORKS];
 export const networkInfo = (id: number) => ALL_NETWORKS.find((n) => n.id === id);

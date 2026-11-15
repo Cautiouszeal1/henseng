@@ -16,7 +16,7 @@ import { ScreenGlow } from "../ui/art";
 import { useTheme } from "../ui/theme";
 import { radius } from "../ui/tokens";
 import { useActivity } from "../wallet/activity";
-import { explorerTx, networkInfo } from "../wallet/networks";
+import { explorerTx, networkInfo, TESTNETS_ENABLED } from "../wallet/networks";
 import { AddressBlock, Notice } from "../wallet/send-ui";
 import { accountExists, latestBlockhash, rentExemptMinimum, sendRawSolana } from "../wallet/solana-rpc";
 import { TokenIcon } from "../wallet/token-icon";
@@ -270,7 +270,7 @@ export default function SendSolanaScreen() {
           <Card style={{ gap: 10 }}>
             <Text variant="subheading">Nothing to send on Solana yet</Text>
             <Text tone="secondary">Your Solana address has no SOL or USDC. Use Receive → Solana to add funds.</Text>
-            {!portfolio.includeTestnets ? <Button label="Show devnet balances" kind="secondary" onPress={() => portfolio.setIncludeTestnets(true)} /> : null}
+            {TESTNETS_ENABLED && !portfolio.includeTestnets ? <Button label="Show devnet balances" kind="secondary" onPress={() => portfolio.setIncludeTestnets(true)} /> : null}
           </Card>
         ) : (
           <>

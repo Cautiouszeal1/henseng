@@ -43,7 +43,30 @@ const config: NextConfig = {
     ),
   },
   async headers() {
-    return [{ source: "/(.*)", headers: securityHeaders }];
+    return [
+      // The website
+      { source: "/((?!app(?:/|$)).*)", headers: securityHeaders },
+      // The HENSENG web app at /app: same protections, but the camera is allowed for QR scanning
+      {
+        source: "/app/:path*",
+        headers: [
+          ...securityHeaders.filter((h) => h.key !== "Permissions-Policy"),
+          { key: "Permissions-Policy", value: "camera=(self), microphone=(), geolocation=()" },
+        ],
+      },
+      { source: "/app/_expo/static/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }] },
+    ];
+  },
+  // The web app is a single-page app: any /app/... path that isn't a file gets its index.html.
+  async rewrites() {
+    return {
+      beforeFiles: [],
+      afterFiles: [],
+      fallback: [
+        { source: "/app", destination: "/app/index.html" },
+        { source: "/app/:path*", destination: "/app/index.html" },
+      ],
+    };
   },
 };
 

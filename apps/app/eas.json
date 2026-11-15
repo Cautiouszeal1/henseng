@@ -8,13 +8,14 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_XMTP_ENV": "dev"
+        "EXPO_PUBLIC_XMTP_ENV": "dev",
+        "EXPO_PUBLIC_ENABLE_TESTNETS": "1"
       }
     },
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_XMTP_ENV": "dev"
+        "EXPO_PUBLIC_XMTP_ENV": "production"
       },
       "android": {
         "buildType": "apk"

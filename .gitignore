@@ -21,3 +21,4 @@ apps/app/extension-build
 apps/app/dist-extension/
 apps/app/dist-extension.zip
 apps/app/dist-dapp/
+apps/web/public/app/
