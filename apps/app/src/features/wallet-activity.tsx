@@ -52,9 +52,11 @@ export function WalletActivity({ includeTestnets, mask, address }: { includeTest
               ? `Bridged ${i.symbol} to ${networkInfo(i.toChainId ?? 0)?.name ?? "another network"}`
               : i.kind === "approve"
                 ? `Allowed ${i.toLabel ?? "an app"} to use ${i.symbol}`
-                : `Sent ${i.symbol}`,
+                : i.kind === "dapp"
+                  ? `Transaction on ${i.toLabel ?? "a website"}`
+                  : `Sent ${i.symbol}`,
         amount: formatTokenAmount(BigInt(i.amount), i.decimals),
-        counterparty: i.kind === "send" ? i.toLabel ?? shortAddress(i.to) : `via ${i.toLabel ?? "LI.FI"}`,
+        counterparty: i.kind === "send" ? i.toLabel ?? shortAddress(i.to) : i.kind === "dapp" ? shortAddress(i.to) : `via ${i.toLabel ?? "LI.FI"}`,
         time: i.createdAt,
         status: i.kind === "bridge" && i.status === "confirmed" && i.bridge !== "done" ? (i.bridge === "pending" ? "pending" : i.bridge === "partial" || i.bridge === "refunded" ? "confirmed" : "failed") : i.status,
         note: i.kind === "bridge" ? (i.bridge === "pending" && i.status === "confirmed" ? "Arriving" : i.bridge === "refunded" ? "Refunded" : i.bridge === "partial" ? "Arrived (other token)" : i.bridge === "unknown" ? "Check explorer" : undefined) : undefined,

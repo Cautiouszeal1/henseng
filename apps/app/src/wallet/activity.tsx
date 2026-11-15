@@ -17,7 +17,7 @@ export interface ActivityItem {
   /** EVM transaction hash, or Solana signature */
   hash: string;
   chainId: number;
-  kind: "send" | "swap" | "bridge" | "approve";
+  kind: "send" | "swap" | "bridge" | "approve" | "dapp";
   symbol: string;
   decimals: number;
   amount: string; // base units as a string (bigint isn't JSON-safe)

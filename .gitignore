@@ -20,3 +20,4 @@ apps/app/extension-build
 # Chrome extension build output
 apps/app/dist-extension/
 apps/app/dist-extension.zip
+apps/app/dist-dapp/

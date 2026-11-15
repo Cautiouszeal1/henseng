@@ -57,6 +57,7 @@ function RootNavigator() {
           <Stack.Screen name="send-solana" options={{ presentation: "modal" }} />
           <Stack.Screen name="swap" options={{ presentation: "modal" }} />
           <Stack.Screen name="scan" options={{ presentation: "fullScreenModal" }} />
+          <Stack.Screen name="browser" options={{ animation: "slide_from_bottom", gestureEnabled: false }} />
         </Stack.Protected>
       </Stack>
     </>

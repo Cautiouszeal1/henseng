@@ -25,6 +25,9 @@ Providers register wipe steps with `onDeviceWipe`. `removeWallet` runs them all,
 - Bearer tokens expire after 30 days and are stored hashed; responses are `Cache-Control: no-store`; security headers are set in `next.config`.
 - Rate limiting keys on the platform-provided client IP (`x-vercel-forwarded-for` / `x-real-ip`), not the client-settable first `x-forwarded-for` entry.
 
+## dApp browser
+See `dapp-browser.md`: per-site connection, approval for every signature and transaction, password for transactions and permits, `eth_sign` refused, iframes can't impersonate the site, https only.
+
 ## Token logos
 - Logos for the curated tokens and networks are bundled in the app (`apps/app/src/wallet/logos.ts`, from @web3icons/core, MIT; see `third-party-notices.md`). Nothing is fetched from token-supplied URLs.
 - A logo shows only when chain **and** contract address match the curated list. A token that copies a name like "USDC" from another address gets a plain letter and an "Unverified" label.

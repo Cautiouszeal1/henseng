@@ -50,6 +50,10 @@ interface WalletApi {
   removeWallet: () => Promise<void>;
   /** Signs a plain-text message (EIP-191) with the unlocked account. Used for HENSENG sign-in. */
   signMessage: (message: string) => Promise<`0x${string}`>;
+  /** Signs a message for a website (EIP-191). `raw` signs bytes given as hex. */
+  signDappMessage: (message: string | { raw: `0x${string}` }) => Promise<`0x${string}`>;
+  /** Signs EIP-712 typed data for a website. */
+  signTypedData: (typed: { domain: any; types: any; primaryType: string; message: any }) => Promise<`0x${string}`>;
   /** Checks the password against the encrypted vault. Used to confirm a send. */
   verifyPassword: (password: string) => Promise<boolean>;
   /** Signs and broadcasts a transaction on this device. Resolves with the hash once the network accepts it. */
@@ -146,6 +150,18 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     return deriveEvmAccount(phrase.current).signMessage({ message });
   }, []);
 
+  const signDappMessage = useCallback<WalletApi["signDappMessage"]>(async (message) => {
+    if (!phrase.current) throw new Error("Unlock HENSENG first.");
+    lastActive.current = Date.now();
+    return deriveEvmAccount(phrase.current).signMessage({ message });
+  }, []);
+
+  const signTypedData = useCallback<WalletApi["signTypedData"]>(async (typed) => {
+    if (!phrase.current) throw new Error("Unlock HENSENG first.");
+    lastActive.current = Date.now();
+    return deriveEvmAccount(phrase.current).signTypedData(typed);
+  }, []);
+
   const verifyPassword = useCallback(async (password: string) => {
     const vault = await loadVault();
     if (!vault) return false;
@@ -174,8 +190,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<WalletApi>(
-    () => ({ status, address, solanaAddress, signSolana, createWallet, unlock, lock, revealPhrase, removeWallet, signMessage, verifyPassword, sendTransaction, touch: () => (lastActive.current = Date.now()) }),
-    [status, address, solanaAddress, signSolana, createWallet, unlock, lock, revealPhrase, removeWallet, signMessage, verifyPassword, sendTransaction],
+    () => ({ status, address, solanaAddress, signSolana, createWallet, unlock, lock, revealPhrase, removeWallet, signMessage, signDappMessage, signTypedData, verifyPassword, sendTransaction, touch: () => (lastActive.current = Date.now()) }),
+    [status, address, solanaAddress, signSolana, createWallet, unlock, lock, revealPhrase, removeWallet, signMessage, signDappMessage, signTypedData, verifyPassword, sendTransaction],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

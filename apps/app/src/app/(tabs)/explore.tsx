@@ -1,5 +1,7 @@
 import { LinearGradient } from "expo-linear-gradient";
 import * as WebBrowser from "expo-web-browser";
+import { router } from "expo-router";
+import { IN_APP_BROWSER } from "../../dapp/dapp-webview";
 import { Bookmark, BookmarkCheck, Clock, Globe, ShieldCheck, VenetianMask, X } from "lucide-react-native";
 import { useMemo, useState } from "react";
 import { ScrollView, Switch, View } from "react-native";
@@ -40,12 +42,15 @@ export default function Explore() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<(typeof CATEGORIES)[number]>("All");
 
+  // iOS/Android: HENSENG's own browser, with the wallet connected. Web and the extension can't
+  // embed other sites, so there they open in a normal tab.
+  const openUrl = async (url: string) => {
+    if (IN_APP_BROWSER) router.push({ pathname: "/browser", params: { url } });
+    else await WebBrowser.openBrowserAsync(url, { toolbarColor: "#101014", controlsColor: "#8957FF" });
+  };
   const open = async (d: Dapp) => {
     browser.recordVisit(d.id);
-    await WebBrowser.openBrowserAsync(d.url, { toolbarColor: "#101014", controlsColor: "#8957FF", createTask: false });
-  };
-  const openUrl = async (url: string) => {
-    await WebBrowser.openBrowserAsync(url, { toolbarColor: "#101014", controlsColor: "#8957FF" });
+    await openUrl(d.url);
   };
 
   const filtered = useMemo(() => {
@@ -159,8 +164,9 @@ export default function Explore() {
         <View style={{ flexDirection: "row", gap: 10, padding: 14, borderRadius: radius.md, backgroundColor: theme.surface }}>
           <ShieldCheck size={18} color={theme.positive} />
           <Text variant="caption" tone="secondary" style={{ flex: 1 }}>
-            dApps open in a secure in-app browser and only over HTTPS. Listing an app here is not an endorsement. Connecting your HENSENG
-            wallet to dApps is coming in a later update.
+            {IN_APP_BROWSER
+              ? "dApps open inside HENSENG, over HTTPS only, with your wallet ready to connect. You approve every connection, signature and transaction. Listing an app here is not an endorsement."
+              : "On the web and in the Chrome extension, dApps open in a new browser tab. Use the HENSENG phone app to connect your wallet to them. Listing an app here is not an endorsement."}
           </Text>
         </View>
       </View>
