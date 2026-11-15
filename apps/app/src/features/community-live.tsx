@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApi, useApiQuery } from "../api/api-context";
 import type { ChannelMessage, CommunityDetail, CommunityRole, Person } from "../api/types";
 import { formatMembers } from "../lib/format";
+import { OrbitArt, ScreenGlow } from "../ui/art";
 import { Avatar } from "../ui/avatar";
 import { Sheet, useToast } from "../ui/overlays";
 import { Button, Card, EmptyState, ErrorState, IconButton, noOutline, Pill, SectionHeader, Skeleton, Tap, Text } from "../ui/primitives";
@@ -267,17 +268,19 @@ export function CommunityLive({ slug }: { slug: string }) {
 
   const header = (
     <View>
-      <LinearGradient colors={["#2A1B5E", g[0], g[1], "#FF9A4D"]} locations={[0, 0.4, 0.8, 1]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ height: isWide ? 170 : 140 + insets.top }}>
-        <View style={{ position: "absolute", right: -40, top: 10, width: 200, height: 200, borderRadius: 100, backgroundColor: "rgba(255,255,255,0.07)" }} />
-        <View style={{ flexDirection: "row", justifyContent: "space-between", paddingTop: (isWide ? 14 : insets.top + 10), paddingHorizontal: 14 }}>
-          <IconButton icon={ArrowLeft} label="Back" onPress={back} />
-          {c.joined ? <IconButton icon={UserPlus} label="Copy invite link" onPress={() => void invite()} /> : null}
+      <OrbitArt seed={c.slug} style={{ width: "100%", height: isWide ? 170 : 150 + insets.top, aspectRatio: undefined }}>
+        <View style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}>
+          <LinearGradient colors={["rgba(16,16,20,0)", theme.bg]} locations={[0.55, 1]} style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }} />
+          <View style={{ flexDirection: "row", justifyContent: "space-between", paddingTop: (isWide ? 14 : insets.top + 10), paddingHorizontal: 14 }}>
+            <IconButton icon={ArrowLeft} label="Back" onPress={back} />
+            {c.joined ? <IconButton icon={UserPlus} label="Copy invite link" onPress={() => void invite()} /> : null}
+          </View>
         </View>
-      </LinearGradient>
+      </OrbitArt>
       <View style={{ paddingHorizontal: 20, marginTop: -40, gap: 12 }}>
         <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 12 }}>
           <View style={{ padding: 4, borderRadius: 26, backgroundColor: theme.bg }}>
-            <Avatar name={c.name} size={76} square gradientIndex={c.avatarIndex} />
+            <Avatar name={c.name} seed={c.slug} size={76} square />
           </View>
           <View style={{ flex: 1 }} />
           {c.banned ? (
@@ -340,6 +343,7 @@ export function CommunityLive({ slug }: { slug: string }) {
             key={m.id}
             haptic={false}
             disabled={!(myRank >= RANK.MODERATOR && myRank > RANK[m.role] && m.id !== me?.id)}
+            dimDisabled={false}
             onPress={() => {
               setMembersOpen(false);
               setMemberSheet(m);
@@ -361,6 +365,7 @@ export function CommunityLive({ slug }: { slug: string }) {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: theme.bg }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      {theme.mode === "dark" ? <ScreenGlow intensity={0.6} /> : null}
       {isWide ? (
         <View style={{ flex: 1, flexDirection: "row" }}>
           <ScrollView style={{ width: 340, flexGrow: 0, borderRightWidth: 1, borderRightColor: theme.border }} contentContainerStyle={{ paddingBottom: 24 }}>

@@ -6,6 +6,8 @@ import { ScrollView, Switch, View } from "react-native";
 import { useBrowserState } from "../../data/browser-history";
 import { DAPPS, type Dapp, type DappCategory } from "../../data/dapps";
 import { useToast } from "../../ui/overlays";
+import { OrbitArt } from "../../ui/art";
+import { Avatar } from "../../ui/avatar";
 import { Card, EmptyState, SearchField, SectionHeader, Tap, Text } from "../../ui/primitives";
 import { Screen } from "../../ui/screen";
 import { useLayout, useTheme } from "../../ui/theme";
@@ -13,12 +15,9 @@ import { radius } from "../../ui/tokens";
 
 const CATEGORIES: ("All" | DappCategory)[] = ["All", "DeFi", "NFTs", "Bridges", "Tools", "Social"];
 
+/** HENSENG artwork tile with the app's initial — we don't reproduce other projects' logos. */
 function DappIcon({ d, size = 48 }: { d: Dapp; size?: number }) {
-  return (
-    <View style={{ width: size, height: size, borderRadius: size * 0.3, backgroundColor: d.color, alignItems: "center", justifyContent: "center" }}>
-      <Text variant="heading" style={{ color: d.color === "#E4E4E4" ? "#101014" : "#FFFFFF", fontSize: size * 0.4 }}>{d.name[0]}</Text>
-    </View>
-  );
+  return <Avatar name={d.name} seed={`dapp:${d.id}`} size={size} square />;
 }
 
 /** Accepts only https URLs; anything else is treated as a search term. */
@@ -101,14 +100,18 @@ export default function Explore() {
             <SectionHeader title="Featured" />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
               {featured.map((d) => (
-                <Tap key={d.id} onPress={() => void open(d)} accessibilityRole="link" accessibilityLabel={`Open ${d.name}`} style={{ width: 240, borderRadius: radius.lg, overflow: "hidden" }}>
-                  <LinearGradient colors={[d.color, "#1C1B27"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 18, height: 150, justifyContent: "space-between" }}>
-                    <DappIcon d={d} size={44} />
-                    <View>
-                      <Text variant="heading" tone="inverse">{d.name}</Text>
-                      <Text variant="caption" style={{ color: "rgba(255,255,255,0.8)" }} numberOfLines={1}>{d.description}</Text>
+                <Tap key={d.id} onPress={() => void open(d)} accessibilityRole="link" accessibilityLabel={`Open ${d.name}`} style={{ width: 260, borderRadius: radius.lg, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)" }}>
+                  <OrbitArt seed={`dapp:${d.id}`} aspect={1.7}>
+                    <View style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, justifyContent: "flex-end" }}>
+                      <LinearGradient colors={["rgba(10,9,20,0)", "rgba(10,9,20,0.82)"]} style={{ padding: 16, paddingTop: 40, flexDirection: "row", alignItems: "center", gap: 12 }}>
+                        <DappIcon d={d} size={40} />
+                        <View style={{ flex: 1 }}>
+                          <Text variant="heading" tone="inverse">{d.name}</Text>
+                          <Text variant="caption" style={{ color: "rgba(255,255,255,0.8)" }} numberOfLines={1}>{d.description}</Text>
+                        </View>
+                      </LinearGradient>
                     </View>
-                  </LinearGradient>
+                  </OrbitArt>
                 </Tap>
               ))}
             </ScrollView>
@@ -117,7 +120,8 @@ export default function Explore() {
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }} accessibilityRole="tablist">
           {CATEGORIES.map((c) => (
-            <Tap key={c} onPress={() => setCategory(c)} accessibilityRole="tab" accessibilityState={{ selected: category === c }} style={{ paddingHorizontal: 16, height: 36, justifyContent: "center", borderRadius: radius.full, backgroundColor: category === c ? theme.accent : theme.surface }}>
+            <Tap key={c} onPress={() => setCategory(c)} accessibilityRole="tab" accessibilityState={{ selected: category === c }} style={{ paddingHorizontal: 16, height: 36, justifyContent: "center", borderRadius: radius.full, overflow: "hidden", backgroundColor: category === c ? undefined : theme.surface, borderWidth: 1, borderColor: category === c ? "rgba(255,255,255,0.18)" : theme.border }}>
+              {category === c ? <LinearGradient colors={["#8957FF", "#397BFF"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }} /> : null}
               <Text variant="bodyStrong" style={{ fontSize: 14, color: category === c ? "#FFFFFF" : theme.textSecondary }}>{c}</Text>
             </Tap>
           ))}

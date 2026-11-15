@@ -43,7 +43,8 @@ export function Screen({
     alignSelf: "center" as const,
   };
   return (
-    <View style={{ flex: 1, backgroundColor: theme.bg }}>
+    // Transparent so the app-wide brand glow behind the tabs shows through.
+    <View style={{ flex: 1, backgroundColor: theme.mode === "dark" ? "transparent" : theme.bg }}>
       {scroll ? (
         <ScrollView contentContainerStyle={[pad, contentStyle]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           {header}

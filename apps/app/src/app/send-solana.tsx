@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { formatUnits } from "viem";
 import { Sheet } from "../ui/overlays";
 import { Button, Card, Field, IconButton, Pill, Tap, Text } from "../ui/primitives";
+import { ScreenGlow } from "../ui/art";
 import { useTheme } from "../ui/theme";
 import { radius } from "../ui/tokens";
 import { useActivity } from "../wallet/activity";
@@ -178,6 +179,7 @@ export default function SendSolanaScreen() {
     const status = activity.get(sig)?.status ?? "pending";
     return (
       <View style={{ flex: 1, backgroundColor: theme.bg }}>
+        {theme.mode === "dark" ? <ScreenGlow intensity={0.75} /> : null}
         {header("Sent")}
         {body(
           <>
@@ -209,6 +211,7 @@ export default function SendSolanaScreen() {
     const feeUsd = solPrice ? Number(formatUnits(review.fee, 9)) * solPrice.usd : undefined;
     return (
       <View style={{ flex: 1, backgroundColor: theme.bg }}>
+        {theme.mode === "dark" ? <ScreenGlow intensity={0.75} /> : null}
         {header("Review", () => setStep("form"))}
         {body(
           <>
@@ -253,6 +256,7 @@ export default function SendSolanaScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.bg }}>
+        {theme.mode === "dark" ? <ScreenGlow intensity={0.75} /> : null}
       {header("Send on Solana")}
       {body(
         !token ? (

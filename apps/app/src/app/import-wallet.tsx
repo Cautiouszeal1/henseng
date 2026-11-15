@@ -1,3 +1,4 @@
+import { Download } from "lucide-react-native";
 import { isValidMnemonic, normalizeMnemonic, passwordProblems, unknownWords } from "@henseng/wallet";
 import { useState } from "react";
 import { OnboardingFrame } from "../ui/onboarding-frame";
@@ -41,6 +42,7 @@ export default function ImportWallet() {
   return (
     <OnboardingFrame
       title="Import a wallet"
+      icon={Download}
       subtitle="Enter the 12 or 24-word recovery phrase from any standard Ethereum wallet."
       footer={<Button label={busy ? "Encrypting…" : "Import wallet"} loading={busy} onPress={() => void submit()} disabled={!clean || !password} />}
     >

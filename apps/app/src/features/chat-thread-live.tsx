@@ -9,6 +9,7 @@ import { useApi } from "../api/api-context";
 import { MESSAGING_TEST_MODE, useMessaging } from "../messaging/messaging-context";
 import { collectReactions, lastPeerReadAt, shortAddr, type ChatMessage, type ChatSummary } from "../messaging/model";
 import { useProfile } from "../profile/profile-context";
+import { ScreenGlow } from "../ui/art";
 import { Avatar } from "../ui/avatar";
 import { Sheet, useToast } from "../ui/overlays";
 import { Button, EmptyState, ErrorState, IconButton, noOutline, Skeleton, Tap, Text } from "../ui/primitives";
@@ -130,7 +131,8 @@ export function ChatThreadLive({ chatId, embedded = false }: { chatId: string; e
   const back = () => (router.canGoBack() ? router.back() : router.replace("/chats"));
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: theme.bg }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: embedded && theme.mode === "dark" ? "transparent" : theme.bg }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      {!embedded && theme.mode === "dark" ? <ScreenGlow intensity={0.7} /> : null}
       <View style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingTop: embedded || isWide ? 16 : insets.top + 6, paddingBottom: 12, paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: theme.border }}>
         {!embedded && <IconButton icon={ArrowLeft} label="Back" tone="plain" onPress={back} />}
         <Avatar name={title || "Chat"} seed={chat?.peerAddress ?? chatId} size={44} square={chat?.kind === "group"} />
@@ -213,7 +215,7 @@ export function ChatThreadLive({ chatId, embedded = false }: { chatId: string; e
                     {mine ? (
                       <LinearGradient colors={buttonGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={shape}>{body}</LinearGradient>
                     ) : (
-                      <View style={[shape, { backgroundColor: theme.card, borderWidth: 1, borderColor: theme.border }]}>{body}</View>
+                      <LinearGradient colors={theme.mode === "dark" ? ["#272639", "#1E1D2B"] : ["#F4F2FA", "#ECEAF4"]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={[shape, { borderWidth: 1, borderColor: theme.border, borderTopColor: theme.mode === "dark" ? "rgba(255,255,255,0.12)" : theme.border }]}>{body}</LinearGradient>
                     )}
                   </Tap>
                   {Platform.OS === "web" && m.status === "sent" ? (

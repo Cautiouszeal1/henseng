@@ -1,5 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { Text as RNText, View } from "react-native";
+import { OrbitArt } from "./art";
 import { useTheme } from "./theme";
 import { avatarGradients, fonts } from "./tokens";
 
@@ -44,13 +45,22 @@ export function Avatar({
   const g = avatarGradients[(gradientIndex ?? hash(seed ?? name)) % avatarGradients.length]!;
   const r = square ? size * 0.3 : size / 2;
   const dot = Math.max(10, Math.round(size * 0.26));
-  const body = (
+  // Communities and groups (square) get their own generated artwork with one bold initial;
+  // people get a gradient with initials and a soft top sheen.
+  const body = square ? (
+    <OrbitArt seed={seed ?? name} radius={r} quiet={size < 48} style={{ width: size, height: size, borderWidth: 1, borderColor: "rgba(255,255,255,0.14)" }}>
+      <RNText style={{ color: "#FFFFFF", fontFamily: fonts.display, fontSize: size * 0.42, textShadowColor: "rgba(10,8,30,0.55)", textShadowRadius: 8, textShadowOffset: { width: 0, height: 2 } }}>
+        {(name.replace(/^0x/i, "").trim()[0] ?? "?").toUpperCase()}
+      </RNText>
+    </OrbitArt>
+  ) : (
     <LinearGradient
       colors={g}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
-      style={{ width: size, height: size, borderRadius: r, alignItems: "center", justifyContent: "center" }}
+      style={{ width: size, height: size, borderRadius: r, alignItems: "center", justifyContent: "center", overflow: "hidden" }}
     >
+      <LinearGradient colors={["rgba(255,255,255,0.28)", "rgba(255,255,255,0)"]} start={{ x: 0.2, y: 0 }} end={{ x: 0.6, y: 0.7 }} style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }} />
       <RNText style={{ color: "#FFFFFF", fontFamily: fonts.heading, fontSize: size * 0.36, letterSpacing: 0.3 }}>{initials(name)}</RNText>
     </LinearGradient>
   );

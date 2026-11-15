@@ -1,3 +1,4 @@
+import { LockKeyhole } from "lucide-react-native";
 import { useState } from "react";
 import { View } from "react-native";
 import { useProfile } from "../profile/profile-context";
@@ -33,6 +34,7 @@ export default function Unlock() {
         title={profile.displayName ? `Welcome back, ${profile.displayName.split(" ")[0]}` : "Welcome back"}
         subtitle="Enter your password to unlock HENSENG."
         hideBack
+        icon={LockKeyhole}
         footer={
           <>
             <Button label={busy ? "Unlocking…" : "Unlock"} loading={busy} disabled={!password} onPress={() => void submit()} />

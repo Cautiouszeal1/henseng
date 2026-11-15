@@ -3,6 +3,7 @@ import * as WebBrowser from "expo-web-browser";
 import { ExternalLink, ImageIcon, ShieldAlert } from "lucide-react-native";
 import { useState } from "react";
 import { View } from "react-native";
+import { OrbitArt } from "../ui/art";
 import { Sheet } from "../ui/overlays";
 import { Button, Card, EmptyState, Pill, Skeleton, Tap, Text } from "../ui/primitives";
 import { useLayout, useTheme } from "../ui/theme";
@@ -15,8 +16,10 @@ function NftImage({ uri, size, label }: { uri: string | null; size: number | "10
   const [failed, setFailed] = useState(false);
   if (!uri || failed) {
     return (
-      <View accessibilityLabel={`${label}, no image`} style={{ width: size, aspectRatio: 1, borderRadius: radius.md, backgroundColor: theme.surface, alignItems: "center", justifyContent: "center" }}>
-        <ImageIcon size={28} color={theme.textTertiary} />
+      <View accessibilityLabel={`${label}, no image`} style={{ width: size }}>
+        <OrbitArt seed={`nft:${label}`} radius={radius.md}>
+          <ImageIcon size={26} color="rgba(255,255,255,0.75)" />
+        </OrbitArt>
       </View>
     );
   }

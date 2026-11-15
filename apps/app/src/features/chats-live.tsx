@@ -350,7 +350,7 @@ export function ChatsLive() {
   );
 
   return (
-    <View style={{ flex: 1, flexDirection: "row", backgroundColor: theme.bg }}>
+    <View style={{ flex: 1, flexDirection: "row", backgroundColor: theme.mode === "dark" ? "transparent" : theme.bg }}>
       <View style={{ width: isWide ? 380 : "100%", borderRightWidth: isWide ? 1 : 0, borderRightColor: theme.border }}>{list}</View>
       {isWide ? (
         <View style={{ flex: 1 }}>

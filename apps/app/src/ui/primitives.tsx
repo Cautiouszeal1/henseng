@@ -1,5 +1,6 @@
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
+import { IconOrbit } from "./art";
 import { Search, X } from "lucide-react-native";
 import type { ComponentType, ReactNode } from "react";
 import {
@@ -59,7 +60,8 @@ export function Text({
 
 /* ───────────── Pressable with feedback ───────────── */
 
-export function Tap({ style, onPress, haptic = true, ...props }: PressableProps & { haptic?: boolean; style?: StyleProp<ViewStyle> }) {
+/** Pressable with press feedback. `dimDisabled={false}` keeps non-interactive rows (e.g. info-only lists) at full strength. */
+export function Tap({ style, onPress, haptic = true, dimDisabled = true, ...props }: PressableProps & { haptic?: boolean; dimDisabled?: boolean; style?: StyleProp<ViewStyle> }) {
   return (
     <Pressable
       {...props}
@@ -69,7 +71,7 @@ export function Tap({ style, onPress, haptic = true, ...props }: PressableProps 
       }}
       style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
         style,
-        { opacity: props.disabled ? 0.45 : pressed ? 0.85 : hovered ? 0.94 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
+        { opacity: props.disabled ? (dimDisabled ? 0.45 : 1) : pressed ? 0.85 : hovered ? 0.94 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
       ]}
     />
   );
@@ -118,15 +120,18 @@ export function Button({
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled: !!(disabled || loading), busy: !!loading }}
       style={[
-        { borderRadius: radius.md, overflow: "hidden" },
-        kind === "secondary" && { borderWidth: 1, borderColor: theme.borderStrong, backgroundColor: "transparent" },
+        { borderRadius: radius.md, overflow: kind === "primary" ? "visible" : "hidden" },
+        kind === "primary" && !(disabled || loading) && { shadowColor: "#7A5CFF", shadowOpacity: 0.45, shadowRadius: 18, shadowOffset: { width: 0, height: 8 }, elevation: 8 },
+        kind === "secondary" && { borderWidth: 1, borderColor: theme.borderStrong, backgroundColor: theme.mode === "dark" ? "rgba(255,255,255,0.03)" : "transparent" },
         kind === "ghost" && { backgroundColor: theme.accentSoft },
         kind === "danger" && { borderWidth: 1, borderColor: theme.negative + "66" },
         style,
       ]}
     >
       {kind === "primary" ? (
-        <LinearGradient colors={buttonGradient} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}>
+        <LinearGradient colors={buttonGradient} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={{ borderRadius: radius.md, overflow: "hidden" }}>
+          {/* faint top sheen */}
+          <LinearGradient colors={["rgba(255,255,255,0.18)", "rgba(255,255,255,0)"]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 0.6 }} style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }} />
           {inner}
         </LinearGradient>
       ) : (
@@ -259,12 +264,24 @@ export function Field({
 
 /* ───────────── Surfaces ───────────── */
 
+/** Surface with a soft top-lit gradient and a lighter top edge, so cards read as raised. */
 export function Card({ children, style, padded = true }: { children: ReactNode; style?: StyleProp<ViewStyle>; padded?: boolean }) {
   const { theme } = useTheme();
+  const dark = theme.mode === "dark";
   return (
-    <View style={[{ backgroundColor: theme.card, borderRadius: radius.lg, borderWidth: 1, borderColor: theme.border }, padded && { padding: space.lg }, style]}>
+    <LinearGradient
+      colors={dark ? ["#22212F", "#1B1A26"] : ["#FFFFFF", "#FBFAFE"]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0, y: 1 }}
+      style={[
+        { borderRadius: radius.lg, borderWidth: 1, borderColor: theme.border, borderTopColor: dark ? "rgba(255,255,255,0.12)" : theme.border },
+        !dark && { shadowColor: "#2A1F5C", shadowOpacity: 0.06, shadowRadius: 18, shadowOffset: { width: 0, height: 6 } },
+        padded && { padding: space.lg },
+        style,
+      ]}
+    >
       {children}
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -302,9 +319,9 @@ export function EmptyState({
   const { theme } = useTheme();
   return (
     <View style={{ alignItems: "center", paddingVertical: 40, paddingHorizontal: 24, gap: 12 }}>
-      <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: theme.accentSoft, alignItems: "center", justifyContent: "center" }}>
-        <Icon size={28} color={theme.accent} strokeWidth={1.6} />
-      </View>
+      <IconOrbit>
+        <Icon size={26} color="#FFFFFF" strokeWidth={1.8} />
+      </IconOrbit>
       <Text variant="heading" style={{ textAlign: "center" }}>{title}</Text>
       <Text tone="secondary" style={{ textAlign: "center", maxWidth: 340 }}>{body}</Text>
       {action ? <Button label={action.label} onPress={action.onPress} size="md" style={{ marginTop: 8 }} /> : null}

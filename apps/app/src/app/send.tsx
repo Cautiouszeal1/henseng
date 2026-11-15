@@ -9,6 +9,7 @@ import { formatUnits } from "viem";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Sheet } from "../ui/overlays";
 import { Button, Card, Field, IconButton, Pill, Tap, Text } from "../ui/primitives";
+import { ScreenGlow } from "../ui/art";
 import { useTheme } from "../ui/theme";
 import { radius } from "../ui/tokens";
 import { useActivity } from "../wallet/activity";
@@ -237,6 +238,7 @@ export default function SendScreen() {
     const status = item?.status ?? "pending";
     return (
       <View style={{ flex: 1, backgroundColor: theme.bg }}>
+        {theme.mode === "dark" ? <ScreenGlow intensity={0.75} /> : null}
         {header("Sent")}
         {body(
           <>
@@ -273,6 +275,7 @@ export default function SendScreen() {
     const feeUsd = ethPrice ? Number(formatUnits(review.fee.maxFee, 18)) * ethPrice.usd : undefined;
     return (
       <View style={{ flex: 1, backgroundColor: theme.bg }}>
+        {theme.mode === "dark" ? <ScreenGlow intensity={0.75} /> : null}
         {header("Review", () => setStep("form"))}
         {body(
           <>
@@ -331,6 +334,7 @@ export default function SendScreen() {
   /* ───────── Form ───────── */
   return (
     <View style={{ flex: 1, backgroundColor: theme.bg }}>
+        {theme.mode === "dark" ? <ScreenGlow intensity={0.75} /> : null}
       {header("Send")}
       {body(
         portfolio.loading && !sendable.length ? (

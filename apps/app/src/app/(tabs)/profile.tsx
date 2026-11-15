@@ -37,7 +37,8 @@ import { Sheet, useToast } from "../../ui/overlays";
 import { Button, Card, Field, Pill, SectionHeader, Tap, Text } from "../../ui/primitives";
 import { Screen } from "../../ui/screen";
 import { useLayout, useTheme, type ThemePreference } from "../../ui/theme";
-import { coverGradients, radius } from "../../ui/tokens";
+import { ProfileCover } from "../../ui/art";
+import { radius } from "../../ui/tokens";
 import { vaultLocationLabel } from "../../wallet/vault-storage";
 import { useWallet, WrongPasswordError } from "../../wallet/wallet-context";
 
@@ -88,7 +89,6 @@ export default function ProfileScreen() {
   const [phrase, setPhrase] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const cover = coverGradients[profile.coverIndex % coverGradients.length]!;
   const api = useApi();
   const live = api.status !== "off";
   const devices = useApiQuery<{ devices: Device[] }>(live ? "/me/devices" : null);
@@ -106,7 +106,7 @@ export default function ProfileScreen() {
 
   const header = (
     <View style={{ borderRadius: radius.xl, overflow: "hidden", backgroundColor: theme.card, borderWidth: 1, borderColor: theme.border }}>
-      <LinearGradient colors={cover} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ height: 130 }} />
+      <ProfileCover index={profile.coverIndex} height={130} />
       <View style={{ alignItems: "center", marginTop: -58, paddingHorizontal: 20, paddingBottom: 22, gap: 10 }}>
         <View style={{ padding: 4, borderRadius: 70, backgroundColor: theme.card }}>
           <Avatar name={profile.displayName || "You"} size={108} presence={profile.showOnline ? "online" : undefined} gradientIndex={profile.avatarIndex} />
@@ -259,7 +259,7 @@ export default function ProfileScreen() {
               <Card style={{ gap: 12 }}>
                 {joined.length ? joined.map((c) => (
                   <Tap key={c.id} haptic={false} disabled={!c.slug} onPress={() => c.slug && nav.push({ pathname: "/community/[id]", params: { id: c.slug } })} style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-                    <Avatar name={c.name} seed={c.id} size={40} square gradientIndex={c.avatarIndex} />
+                    <Avatar name={c.name} seed={c.slug} size={40} square />
                     <Text variant="bodyStrong" style={{ flex: 1 }}>{c.name}</Text>
                     {live ? null : <Pill label="Preview" tone="warning" />}
                   </Tap>

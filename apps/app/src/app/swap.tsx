@@ -13,6 +13,7 @@ import { useApi } from "../api/api-context";
 import { ApiError } from "../api/types";
 import { Sheet } from "../ui/overlays";
 import { Button, Card, Field, IconButton, Pill, Tap, Text } from "../ui/primitives";
+import { ScreenGlow } from "../ui/art";
 import { useTheme } from "../ui/theme";
 import { radius } from "../ui/tokens";
 import { useActivity } from "../wallet/activity";
@@ -300,6 +301,7 @@ export default function SwapScreen() {
                 : "Waiting for the network to confirm…";
     return (
       <View style={{ flex: 1, backgroundColor: theme.bg }}>
+        {theme.mode === "dark" ? <ScreenGlow intensity={0.75} /> : null}
         {header(title)}
         {body(
           <>
@@ -327,6 +329,7 @@ export default function SwapScreen() {
     const at = steps.findIndex(([p]) => p === phase);
     return (
       <View style={{ flex: 1, backgroundColor: theme.bg }}>
+        {theme.mode === "dark" ? <ScreenGlow intensity={0.75} /> : null}
         {header(title)}
         {body(
           <Card style={{ gap: 16 }}>
@@ -347,6 +350,7 @@ export default function SwapScreen() {
   if (step === "review" && q) {
     return (
       <View style={{ flex: 1, backgroundColor: theme.bg }}>
+        {theme.mode === "dark" ? <ScreenGlow intensity={0.75} /> : null}
         {header(`Review ${mode}`, () => setStep("form"))}
         {body(
           <>
@@ -443,6 +447,7 @@ export default function SwapScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.bg }}>
+        {theme.mode === "dark" ? <ScreenGlow intensity={0.75} /> : null}
       {header(title)}
       {body(
         <>

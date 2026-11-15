@@ -10,7 +10,8 @@ import { useToast } from "../ui/overlays";
 import { Button, Field, IconButton, SectionHeader, Tap, Text } from "../ui/primitives";
 import { Screen } from "../ui/screen";
 import { useTheme } from "../ui/theme";
-import { avatarGradients, coverGradients, radius } from "../ui/tokens";
+import { COVER_COUNT, ProfileCover } from "../ui/art";
+import { avatarGradients, radius } from "../ui/tokens";
 
 export default function EditProfile() {
   const { theme } = useTheme();
@@ -51,7 +52,7 @@ export default function EditProfile() {
     <Screen title="Edit profile" right={<IconButton icon={X} label="Close" onPress={() => router.back()} />}>
       <View style={{ gap: 22 }}>
         <View style={{ borderRadius: radius.xl, overflow: "hidden" }}>
-          <LinearGradient colors={coverGradients[coverIndex]!} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ height: 120 }} />
+          <ProfileCover index={coverIndex} height={120} />
           <View style={{ alignItems: "center", marginTop: -48 }}>
             <View style={{ padding: 4, borderRadius: 60, backgroundColor: theme.bg }}>
               <Avatar name={displayName || "You"} size={92} gradientIndex={avatarIndex} />
@@ -62,11 +63,14 @@ export default function EditProfile() {
         <View>
           <SectionHeader title="Cover" />
           <View style={{ flexDirection: "row", gap: 10 }}>
-            {coverGradients.map((g, i) => (
-              <Tap key={i} onPress={() => setCoverIndex(i)} accessibilityRole="radio" accessibilityState={{ checked: coverIndex === i }} accessibilityLabel={`Cover ${i + 1}`} style={{ flex: 1, height: 44, borderRadius: 12, overflow: "hidden", borderWidth: 2, borderColor: coverIndex === i ? theme.text : "transparent" }}>
-                <LinearGradient colors={g} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-                  {coverIndex === i ? <Check size={18} color="#FFFFFF" /> : null}
-                </LinearGradient>
+            {Array.from({ length: COVER_COUNT }, (_, i) => (
+              <Tap key={i} onPress={() => setCoverIndex(i)} accessibilityRole="radio" accessibilityState={{ checked: coverIndex === i }} accessibilityLabel={`Cover ${i + 1}`} style={{ flex: 1, height: 52, borderRadius: 12, overflow: "hidden", borderWidth: 2, borderColor: coverIndex === i ? theme.text : "transparent" }}>
+                <ProfileCover index={i} height={52} />
+                {coverIndex === i ? (
+                  <View style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.25)" }}>
+                    <Check size={18} color="#FFFFFF" />
+                  </View>
+                ) : null}
               </Tap>
             ))}
           </View>

@@ -8,6 +8,7 @@ import { useState } from "react";
 import { Switch, View } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import { WalletActivity } from "../../features/wallet-activity";
+import { OrbitArt } from "../../ui/art";
 import { WalletNfts } from "../../features/wallet-nfts";
 import { Sheet, useToast } from "../../ui/overlays";
 import { Button, Card, Field, IconButton, Pill, Skeleton, Tap, Text } from "../../ui/primitives";
@@ -107,8 +108,8 @@ export default function WalletScreen() {
   const balanceCard = (
     <View style={{ borderRadius: radius.xl, overflow: "hidden", borderWidth: 1, borderColor: theme.border }}>
       <LinearGradient colors={["#2A1F5C", "#1E2A6B", "#1C1B27"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 22, gap: 16 }}>
-        <View style={{ position: "absolute", right: -50, top: -60, width: 220, height: 220, borderRadius: 110, backgroundColor: "rgba(137,87,255,0.25)" }} />
-        <View style={{ position: "absolute", right: 30, bottom: -80, width: 180, height: 180, borderRadius: 90, backgroundColor: "rgba(255,154,77,0.12)" }} />
+        <OrbitArt seed={`wallet:${address ?? ""}`} paletteIndex={0} quiet style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, aspectRatio: undefined, opacity: 0.5 }} />
+        <LinearGradient colors={["rgba(16,14,34,0.55)", "rgba(16,14,34,0.1)"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }} />
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <Text variant="caption" style={{ color: "#C9C7D6" }}>Total balance</Text>
           <Tap onPress={() => setHidden((v) => !v)} accessibilityLabel={hidden ? "Show balance" : "Hide balance"} haptic={false}>

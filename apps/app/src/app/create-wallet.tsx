@@ -1,5 +1,5 @@
 import { generateMnemonic, passwordProblems, pickConfirmationPositions } from "@henseng/wallet";
-import { Eye, KeyRound, ShieldCheck, TriangleAlert } from "lucide-react-native";
+import { Eye, KeyRound, ListChecks, ScrollText, ShieldCheck, TriangleAlert, UserRound } from "lucide-react-native";
 import { useMemo, useState } from "react";
 import { View } from "react-native";
 import { USERNAME_RE, useProfile } from "../profile/profile-context";
@@ -36,6 +36,7 @@ export default function CreateWallet() {
         step={1}
         total={4}
         title="Create your wallet"
+        icon={KeyRound}
         subtitle="Your HENSENG account is a wallet that only you control."
         footer={<Button label="Show my recovery phrase" icon={Eye} onPress={() => setStep("phrase")} />}
       >
@@ -64,6 +65,7 @@ export default function CreateWallet() {
         step={2}
         total={4}
         title="Your recovery phrase"
+        icon={ScrollText}
         subtitle="Write these 12 words down in order. Don't screenshot or copy them."
         onBack={() => setStep("intro")}
         footer={<Button label="I've written it down" disabled={!revealed} onPress={() => setStep("confirm")} />}
@@ -110,6 +112,7 @@ export default function CreateWallet() {
         step={3}
         total={4}
         title="Confirm your phrase"
+        icon={ListChecks}
         subtitle="Enter the words at these positions to prove you have a copy."
         onBack={() => setStep("phrase")}
         footer={<Button label="Confirm" onPress={check} disabled={positions.some((p) => !answers[p]?.trim())} />}
@@ -154,6 +157,7 @@ export default function CreateWallet() {
       step={4}
       total={4}
       title="Set up your profile"
+        icon={UserRound}
       subtitle="Your name is what friends see. The password unlocks HENSENG on this device."
       onBack={() => setStep("confirm")}
       footer={<Button label={busy ? "Encrypting your wallet…" : "Create wallet"} loading={busy} onPress={() => void submit()} disabled={!password || !password2} />}

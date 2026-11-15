@@ -1,9 +1,11 @@
 import { router } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
-import type { ReactNode } from "react";
+import { LinearGradient } from "expo-linear-gradient";
+import type { ComponentType, ReactNode } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AmbientBackground } from "./ambient";
+import { IconOrbit } from "./art";
 import { IconButton, Text } from "./primitives";
 import { DarkScope } from "./theme";
 
@@ -17,7 +19,10 @@ export function OnboardingFrame({
   footer,
   onBack,
   hideBack,
+  icon: Icon,
 }: {
+  /** Illustrated badge above the title */
+  icon?: ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
   step?: number;
   total?: number;
   title: string;
@@ -40,11 +45,20 @@ export function OnboardingFrame({
               {step && total ? (
                 <View style={{ flex: 1, flexDirection: "row", gap: 6 }} accessibilityLabel={`Step ${step} of ${total}`}>
                   {Array.from({ length: total }, (_, i) => (
-                    <View key={i} style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: i < step ? "#8957FF" : "rgba(255,255,255,0.14)" }} />
+                    <View key={i} style={{ flex: 1, height: 4, borderRadius: 2, overflow: "hidden", backgroundColor: "rgba(255,255,255,0.14)" }}>
+                      {i < step ? <LinearGradient colors={["#8957FF", "#397BFF"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ flex: 1 }} /> : null}
+                    </View>
                   ))}
                 </View>
               ) : null}
             </View>
+            {Icon ? (
+              <View style={{ alignItems: "flex-start", marginLeft: -20, marginBottom: -8 }}>
+                <IconOrbit size={1.15}>
+                  <Icon size={28} color="#FFFFFF" strokeWidth={1.8} />
+                </IconOrbit>
+              </View>
+            ) : null}
             <View style={{ gap: 8 }}>
               <Text variant="title" tone="inverse" accessibilityRole="header">{title}</Text>
               {subtitle ? <Text style={{ color: "#B8B6C6" }}>{subtitle}</Text> : null}

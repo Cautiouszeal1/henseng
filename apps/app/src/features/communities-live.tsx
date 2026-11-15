@@ -6,6 +6,7 @@ import { ActivityIndicator, ScrollView, View } from "react-native";
 import { useApi, useApiQuery } from "../api/api-context";
 import type { CommunityCard } from "../api/types";
 import { formatMembers } from "../lib/format";
+import { OrbitArt } from "../ui/art";
 import { Avatar } from "../ui/avatar";
 import { Sheet, useToast } from "../ui/overlays";
 import { Button, Card, EmptyState, ErrorState, Field, IconButton, Pill, SearchField, SectionHeader, Skeleton, Tap, Text } from "../ui/primitives";
@@ -16,37 +17,44 @@ import { avatarGradients, radius } from "../ui/tokens";
 const CATEGORIES = ["General", "Builders", "DeFi", "NFTs", "DAO", "Gaming", "Education"] as const;
 const open = (slug: string) => router.push({ pathname: "/community/[id]", params: { id: slug } });
 
-function Featured({ c }: { c: CommunityCard }) {
-  const g = avatarGradients[c.avatarIndex % avatarGradients.length]!;
+function Featured({ c, wide }: { c: CommunityCard; wide: boolean }) {
   return (
-    <Tap onPress={() => open(c.slug)} accessibilityRole="button" accessibilityLabel={`${c.name}, ${formatMembers(c.memberCount)} members`} style={{ borderRadius: radius.xl, overflow: "hidden" }}>
-      <LinearGradient colors={["#2A1B5E", g[0], g[1], "#FF9A4D"]} locations={[0, 0.35, 0.75, 1]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ height: 180, padding: 20, justifyContent: "flex-end" }}>
-        <View style={{ position: "absolute", right: -30, top: -30, width: 180, height: 180, borderRadius: 90, backgroundColor: "rgba(255,255,255,0.08)" }} />
-        <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 12 }}>
-          <View style={{ flex: 1, gap: 4 }}>
-            <Text variant="title" tone="inverse" numberOfLines={1}>{c.name}</Text>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-              <Users size={14} color="rgba(255,255,255,0.85)" />
-              <Text variant="caption" style={{ color: "rgba(255,255,255,0.85)" }}>{formatMembers(c.memberCount)} member{c.memberCount === 1 ? "" : "s"}</Text>
+    <Tap onPress={() => open(c.slug)} accessibilityRole="button" accessibilityLabel={`${c.name}, ${formatMembers(c.memberCount)} members`} style={{ borderRadius: radius.xl, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)" }}>
+      <OrbitArt seed={c.slug} aspect={wide ? 3.4 : 1.9}>
+        <View style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, justifyContent: "flex-end" }}>
+          <LinearGradient colors={["rgba(10,9,20,0)", "rgba(10,9,20,0.78)"]} style={{ padding: 20, paddingTop: 60 }}>
+            <Text variant="label" style={{ color: "rgba(255,255,255,0.75)", marginBottom: 4 }}>Featured · {c.category}</Text>
+            <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 12 }}>
+              <View style={{ flex: 1, gap: 4 }}>
+                <Text variant="title" tone="inverse" numberOfLines={1}>{c.name}</Text>
+                {c.tagline ? <Text variant="body" style={{ color: "rgba(255,255,255,0.85)" }} numberOfLines={1}>{c.tagline}</Text> : null}
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  <Users size={14} color="rgba(255,255,255,0.8)" />
+                  <Text variant="caption" style={{ color: "rgba(255,255,255,0.8)" }}>{formatMembers(c.memberCount)} member{c.memberCount === 1 ? "" : "s"}</Text>
+                </View>
+              </View>
+              <View style={{ paddingHorizontal: 18, paddingVertical: 9, borderRadius: radius.full, backgroundColor: "rgba(255,255,255,0.16)", borderWidth: 1, borderColor: "rgba(255,255,255,0.32)" }}>
+                <Text variant="bodyStrong" tone="inverse">{c.joined ? "Open" : "View"}</Text>
+              </View>
             </View>
-          </View>
-          <View style={{ paddingHorizontal: 18, paddingVertical: 9, borderRadius: radius.full, backgroundColor: "rgba(255,255,255,0.18)", borderWidth: 1, borderColor: "rgba(255,255,255,0.3)" }}>
-            <Text variant="bodyStrong" tone="inverse">{c.joined ? "Open" : "View"}</Text>
-          </View>
+          </LinearGradient>
         </View>
-      </LinearGradient>
+      </OrbitArt>
     </Tap>
   );
 }
 
-function Tile({ c }: { c: CommunityCard }) {
+function Tile({ c, width }: { c: CommunityCard; width: number | `${number}%` }) {
   const { theme } = useTheme();
   return (
-    <Tap onPress={() => open(c.slug)} accessibilityRole="button" accessibilityLabel={c.name} style={{ width: 150, padding: 14, gap: 12, borderRadius: radius.lg, backgroundColor: theme.card, borderWidth: 1, borderColor: theme.border }}>
-      <Avatar name={c.name} size={52} square gradientIndex={c.avatarIndex} />
-      <View style={{ gap: 2 }}>
-        <Text variant="subheading" numberOfLines={1}>{c.name}</Text>
-        <Text variant="caption" tone="tertiary">{formatMembers(c.memberCount)} members</Text>
+    <Tap onPress={() => open(c.slug)} accessibilityRole="button" accessibilityLabel={c.name} style={{ width, borderRadius: radius.lg, overflow: "hidden", backgroundColor: theme.card, borderWidth: 1, borderColor: theme.border, borderTopColor: "rgba(255,255,255,0.12)" }}>
+      <OrbitArt seed={c.slug} aspect={2} />
+      <View style={{ padding: 12, paddingTop: 0, marginTop: -22, gap: 8 }}>
+        <Avatar name={c.name} seed={c.slug} size={44} square />
+        <View style={{ gap: 2 }}>
+          <Text variant="subheading" numberOfLines={1}>{c.name}</Text>
+          <Text variant="caption" tone="tertiary" numberOfLines={1}>{formatMembers(c.memberCount)} members · {c.category}</Text>
+        </View>
       </View>
     </Tap>
   );
@@ -56,7 +64,7 @@ export function CommunityRow({ c }: { c: CommunityCard }) {
   const { theme } = useTheme();
   return (
     <Tap onPress={() => open(c.slug)} haptic={false} accessibilityRole="button" accessibilityLabel={c.name} style={{ flexDirection: "row", alignItems: "center", gap: 14, paddingVertical: 12 }}>
-      <Avatar name={c.name} size={50} square gradientIndex={c.avatarIndex} />
+      <Avatar name={c.name} seed={c.slug} size={50} square />
       <View style={{ flex: 1, gap: 2 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
           <Text variant="subheading" numberOfLines={1}>{c.name}</Text>
@@ -206,18 +214,24 @@ export function CommunitiesLive() {
           </Card>
         ) : null}
 
+        {featured ? <Featured c={featured} wide={isDesktop} /> : null}
         <View style={{ flexDirection: isDesktop ? "row" : "column", gap: 28 }}>
           <View style={{ flex: isDesktop ? 1.4 : undefined, gap: 28 }}>
-            {featured ? <Featured c={featured} /> : null}
             {trending.length ? (
               <View>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 12 }}>
                   <Text variant="heading">Trending communities</Text>
                   <Flame size={18} color="#FF9A4D" />
                 </View>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
-                  {trending.map((c) => <Tile key={c.id} c={c} />)}
-                </ScrollView>
+                {isDesktop ? (
+                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
+                    {trending.map((c) => <Tile key={c.id} c={c} width="31.5%" />)}
+                  </View>
+                ) : (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
+                    {trending.map((c) => <Tile key={c.id} c={c} width={168} />)}
+                  </ScrollView>
+                )}
               </View>
             ) : null}
           </View>
